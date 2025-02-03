@@ -56,6 +56,25 @@ typedef struct passupvector {
     unsigned int exception_stackPtr;
 } passupvector_t;
 
+/* process control block type */
+typedef struct pcb_PTR {
+	/* process queue fields */
+	struct pcb_PTR *p_next;
+	struct pcb_PTR *p_prev;
+
+	/* process tree fields */
+	struct pcb_PTR *p_prnt;
+	struct pcb_PTR *p_child;
+	struct pcb_PTR *p_sib;
+
+	/* process state information */
+	state_t 		p_s;
+	cpu_t 			p_time;
+	int 			*p_semAdd;
+
+	/* support layer information */
+	/*support_t *p_supportStruct;*/
+} pcb_PTR;
 
 #define STATEREGNUM	31
 typedef struct state_t {
