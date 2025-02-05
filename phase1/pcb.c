@@ -22,9 +22,10 @@ HIDDEN void resetPcb(pcb_t *p) {
     p->p_s.s_status = 0;
     p->p_s.s_pc = 0;
     p->p_time = 0;
-    p->p_semAdd = NULL; //
+    p->p_semAdd = NULL; /*  */
 
-    for (int i = 0; i < STATEREGNUM; i++) {
+    int i;
+    for (i = 0; i < STATEREGNUM; i++) {
         p->p_s.s_reg[i] = 0;
     }
 }
@@ -42,7 +43,7 @@ void freePcb(pcb_t *p) {
 pcb_t *allocPcb() {
 	if (pcbFree_h == NULL)
     	return NULL;
-	pcb_t *p = removeProcQ(&pcbFree_h); //
+	pcb_t *p = removeProcQ(&pcbFree_h); /*  */
     
 	resetPcb(p);
     
@@ -50,8 +51,9 @@ pcb_t *allocPcb() {
 }
 
 void initPcbs() {
-	pcbFree_h = &(pcbFree_list[0]); //
-	for (int i = 0; i < MAXPROC; i++) {
+	pcbFree_h = &(pcbFree_list[0]); 
+    int i;
+	for (i = 0; i < MAXPROC; i++) {
     	resetPcb(&pcbFree_list[i]);
     	insertProcQ(&pcbFree_h, &pcbFree_list[i]);
 	}
@@ -98,7 +100,7 @@ pcb_t *outProcQ (pcb_t **tp, pcb_t *p) {
     if (*tp == NULL || p == NULL)
     	return NULL;
     
-    // check p in list
+    /* check p in list */
 	if (p->p_prev == NULL || p->p_next == NULL)
     	return NULL;
     
@@ -109,10 +111,10 @@ pcb_t *outProcQ (pcb_t **tp, pcb_t *p) {
         p->p_next->p_prev = p->p_prev;
     	p->p_prev->p_next = p->p_next;
     	if (*tp == p)
-        	*tp = p->p_prev; // tail removed, new tail is tail.prev
-	}
+        	*tp = p->p_prev; /* tail removed, new tail is tail.prev */
+	} 
 
-    // dereference the links of p
+    /* dereference the links of p */
 	p->p_next = p->p_prev = NULL;
 	return p;
 }
@@ -123,5 +125,18 @@ pcb_t *headProcQ(pcb_t *tp) {
 	return tp->p_next;
 }
 
+int emptyChild (pcb_t *p) {
+	return p->p_child == NULL;
+}
 
- 
+void insertChild (pcb_t *prnt, pcb_t *p) {
+
+}
+
+pcb_t *removeChild (pcb_t *p) {
+	return removeProcQ(&(p->p_child));
+}
+
+pcb_t *outChild (pcb_t *p) {
+
+}
