@@ -76,6 +76,13 @@ typedef struct pcb_t {
 	/*support_t *p_supportStruct;*/
 } pcb_t;
 
+/* Semaphore descriptor type*/
+typedef struct semd_t {
+	struct semd_t 	*s_next;
+	int 			*s_semAdd;
+	pcb_t 			*s_procQ;
+} semd_t;
+
 #define STATEREGNUM	31
 typedef struct state_t {
 	unsigned int	s_entryHI;
