@@ -5,7 +5,7 @@
 #define MAXPROC	20
 #define	MAXSEM	MAXPROC
 
-static pcb_t pcbFree_list[MAXPROC];
+HIDDEN pcb_t pcbFree_list[MAXPROC];
 HIDDEN pcb_t *pcbFree_h;  
 
 HIDDEN void resetPcb(pcb_t *p) {
@@ -30,9 +30,8 @@ HIDDEN void resetPcb(pcb_t *p) {
 }
 
 void freePcb(pcb_t *p) {
-    if (p == NULL) {
+    if (p == NULL) 
         return;
-    }
 
     resetPcb(p);
     
@@ -82,5 +81,47 @@ void insertProcQ (pcb_t **tp, pcb_t *p) {
 }
 
 pcb_t *removeProcQ (pcb_t **tp) {
-    
+    pcb_t *hp = &(*tp)->p_next;
+    if (*tp == NULL) 
+        return NULL;
+
+    else if (hp == (*tp)) 
+        *tp = NULL;
+
+    else {
+        (*tp)->p_next = hp->p_next;
+        hp->p_next->p_prev = (*tp);
+    }
 }
+
+pcb_t *outProcQ (pcb_t **tp, pcb_t *p) {
+    if (*tp == NULL || p == NULL)
+    	return NULL;
+    
+    // check p in list
+	if (p->p_prev == NULL || p->p_next == NULL)
+    	return NULL;
+    
+	if (p->p_prev == p && p->p_next == p) {  
+    	*tp = NULL;
+	} 
+    else {
+        p->p_next->p_prev = p->p_prev;
+    	p->p_prev->p_next = p->p_next;
+    	if (*tp == p)
+        	*tp = p->p_prev; // tail removed, new tail is tail.prev
+	}
+
+    // dereference the links of p
+	p->p_next = p->p_prev = NULL;
+	return p;
+}
+
+pcb_t *headProcQ(pcb_t *tp) {
+	if (tp == NULL)
+    	return NULL;
+	return tp->p_next;
+}
+
+
+ 
