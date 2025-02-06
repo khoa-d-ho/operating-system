@@ -9,7 +9,8 @@
 
 /* Hardware & software constants */
 #define PAGESIZE		  4096			/* page size in bytes	*/
-#define WORDLEN			  4				  /* word size in bytes	*/
+#define WORDLEN			  4				/* word size in bytes	*/
+#define MAXPROC			  20			/* max number of processes */
 
 
 /* timer, timescale, TOD-LO and other bus regs */
@@ -25,6 +26,7 @@
 #define	FALSE			    0
 #define HIDDEN			  static
 #define EOS				    '\0'
+#define MAXINT       0x7FFFFFFF
 
 #define NULL 			    ((void *)0xFFFFFFFF)
 
