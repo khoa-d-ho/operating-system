@@ -1,14 +1,9 @@
-#include "../h/const.h"
-#include "../h/types.h"
 #include "../h/pcb.h"
 
-#define MAXPROC	20
-#define	MAXSEM	MAXPROC
-
 HIDDEN pcb_t pcbFree_list[MAXPROC];
-HIDDEN pcb_t *pcbFree_h;  
+HIDDEN pcb_PTR pcbFree_h;  
 
-HIDDEN void resetPcb(pcb_t *p) {
+HIDDEN void resetPcb(pcb_PTR p) {
 	if (p == NULL)
     	return;
     
@@ -16,7 +11,8 @@ HIDDEN void resetPcb(pcb_t *p) {
     p->p_prev = NULL;
     p->p_prnt = NULL;
     p->p_child = NULL;
-    p->p_sib = NULL;
+    p->p_next_sib = NULL;
+    p->p_prev_sib = NULL;
     p->p_s.s_entryHI = 0;
     p->p_s.s_cause = 0;
     p->p_s.s_status = 0;
@@ -30,20 +26,22 @@ HIDDEN void resetPcb(pcb_t *p) {
     }
 }
 
-void freePcb(pcb_t *p) {
+void freePcb(pcb_PTR p) {
     if (p == NULL) 
         return;
-
-    resetPcb(p);
     
+    resetPcb(p);
+
     p->p_next = pcbFree_h;
     pcbFree_h = p;
 }
 
-pcb_t *allocPcb() {
+pcb_PTR allocPcb() {
 	if (pcbFree_h == NULL)
     	return NULL;
-	pcb_t *p = removeProcQ(&pcbFree_h); /*  */
+
+    pcb_PTR p = pcbFree_h;
+    pcbFree_h = pcbFree_h->p_next;
     
 	resetPcb(p);
     
@@ -51,23 +49,28 @@ pcb_t *allocPcb() {
 }
 
 void initPcbs() {
-	pcbFree_h = &(pcbFree_list[0]); 
+    pcb_PTR tmp;
+    pcbFree_h = &pcbFree_list[0];
+    pcbFree_h->p_prev = NULL;
+    tmp = pcbFree_h;
     int i;
-	for (i = 0; i < MAXPROC; i++) {
-    	resetPcb(&pcbFree_list[i]);
-    	insertProcQ(&pcbFree_h, &pcbFree_list[i]);
-	}
+    for (i = 1;  i < MAXPROC; i++) {
+        tmp->p_next = &pcbFree_list[i];
+        tmp = tmp->p_next;
+        tmp->p_prev = NULL;
+    }
+    tmp->p_next = NULL;
 }
 
-pcb_t *mkEmptyProcQ() {
+pcb_PTR mkEmptyProcQ() {
 	return NULL;
 }
 
-int emptyProcQ (pcb_t *tp) {
+int emptyProcQ (pcb_PTR tp) {
     return (tp == NULL);
 }
 
-void insertProcQ (pcb_t **tp, pcb_t *p) {
+void insertProcQ (pcb_PTR *tp, pcb_PTR p) {
     if (*tp == NULL) {
         *tp = p;
         p->p_next = *tp;
@@ -82,21 +85,14 @@ void insertProcQ (pcb_t **tp, pcb_t *p) {
     }
 }
 
-pcb_t *removeProcQ (pcb_t **tp) {
-    pcb_t *hp = &(*tp)->p_next;
+pcb_PTR removeProcQ (pcb_PTR *tp) {
     if (*tp == NULL) 
         return NULL;
-
-    else if (hp == (*tp)) 
-        *tp = NULL;
-
-    else {
-        (*tp)->p_next = hp->p_next;
-        hp->p_next->p_prev = (*tp);
-    }
+    return outProcQ(tp, (*tp)->p_next);
 }
 
-pcb_t *outProcQ (pcb_t **tp, pcb_t *p) {
+
+pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p) {
     if (*tp == NULL || p == NULL)
     	return NULL;
     
@@ -104,9 +100,9 @@ pcb_t *outProcQ (pcb_t **tp, pcb_t *p) {
 	if (p->p_prev == NULL || p->p_next == NULL)
     	return NULL;
     
-	if (p->p_prev == p && p->p_next == p) {  
+	if (p->p_prev == p && p->p_next == p)
     	*tp = NULL;
-	} 
+
     else {
         p->p_next->p_prev = p->p_prev;
     	p->p_prev->p_next = p->p_next;
@@ -119,30 +115,29 @@ pcb_t *outProcQ (pcb_t **tp, pcb_t *p) {
 	return p;
 }
 
-pcb_t *headProcQ(pcb_t *tp) {
+pcb_PTR headProcQ(pcb_PTR tp) {
 	if (tp == NULL)
     	return NULL;
 	return tp->p_next;
 }
 
-int emptyChild (pcb_t *p) {
+int emptyChild (pcb_PTR p) {
 	return p->p_child == NULL;
 }
 
-void insertChild (pcb_t *prnt, pcb_t *p) {
+void insertChild (pcb_PTR prnt, pcb_PTR p) {
     insertProcQ(&(prnt->p_child), p);
 	p->p_prnt = prnt;
 }
 
 
-pcb_t *removeChild (pcb_t *p) {
+pcb_PTR removeChild (pcb_PTR p) {
 	return removeProcQ(&(p->p_child));
 }
 
-pcb_t *outChild (pcb_t *p) {
-    pcb_t *prnt = p->p_prnt;
+pcb_PTR outChild (pcb_PTR p) {
+    pcb_PTR prnt = p->p_prnt;
 	if (prnt == NULL) 
     	return NULL;
 	return outProcQ(&(prnt->p_child), p);
-
 }

@@ -56,33 +56,6 @@ typedef struct passupvector {
     unsigned int exception_stackPtr;
 } passupvector_t;
 
-/* Process control block type */
-typedef struct pcb_t {
-	/* process queue fields */
-	struct pcb_t *p_next;
-	struct pcb_t *p_prev;
-
-	/* process tree fields */
-	struct pcb_t *p_prnt;
-	struct pcb_t *p_child;
-	struct pcb_t *p_sib;
-
-	/* process state information */
-	state_t 		p_s;
-	cpu_t 			p_time;
-	int 			*p_semAdd;
-
-	/* support layer information */
-	
-	/*support_t *p_supportStruct;*/
-} pcb_t;
-
-/* Semaphore descriptor type*/
-typedef struct semd_t {
-	struct semd_t 	*s_next;
-	int 			*s_semAdd;
-	pcb_t 			*s_procQ;
-} semd_t;
 
 #define STATEREGNUM	31
 typedef struct state_t {
@@ -125,6 +98,34 @@ typedef struct state_t {
 #define s_ra	s_reg[28]
 #define s_HI	s_reg[29]
 #define s_LO	s_reg[30]
+
+/* process table entry type */
+typedef struct pcb_t {
+	/* process queue fields */
+    struct pcb_t   *p_next;							/* ptr to next entry			*/
+    struct pcb_t   *p_prev; 						/* ptr to previous entry		*/
+
+	/* process tree fields */
+	struct pcb_t	*p_prnt, 						/* ptr to parent				*/
+					*p_child,						/* ptr to 1st child				*/
+					*p_next_sib,					/* ptr to next sibling 			*/
+					*p_prev_sib;					/* ptr to prev. sibling			*/
+	
+	/* process status information */
+	state_t			p_s;							/* processor state				*/
+	cpu_t			p_time;							/* cpu time used by proc		*/
+	int				*p_semAdd;						/* ptr to semaphore on			*/
+													/* which proc is blocked		*/
+	/* support layer information */
+	/* support_t		*p_supportStruct;	 */					
+}  pcb_t, *pcb_PTR;
+
+/* Semaphore descriptor type*/
+typedef struct semd_t {
+	struct semd_t 	*s_next;
+	int 			*s_semAdd;
+	pcb_t 			*s_procQ;
+} semd_t;
 
 
 #endif
