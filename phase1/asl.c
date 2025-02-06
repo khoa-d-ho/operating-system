@@ -1,12 +1,36 @@
 #include "../h/asl.h"
 #include "../h/pcb.h"
 
+/************************** ASL.C ******************************
+*
+*  The implementation file for the Active Semaphore List. 
+*  
+*  The ASL is a list of semd_t nodes, each of which contains a
+*  semaphore address (semAdd) and a pointer to a queue of processes. 
+*  The list is ordered by semAdd in ascending order.
+*  - insertBlocked: inserts a process in the queue of the semaphore
+*  - removeBlocked: removes a process from the queue of the semaphore
+*  - outBlocked: removes a process from the queue of the semaphore
+*  - headBlocked: returns the first process in the queue of the semaphore
+*  - initASL: initializes the ASL
+*  Helper function: traverseASL, which traverses the ASL to find the
+*  correct position to insert a semaphore.
+*
+*  Written by Khoa Ho & Hieu Tran
+*  February 2025
+*/
+
 HIDDEN semd_t *semd_h; /* Head of the active semaphore list */ 
 HIDDEN semd_t *semdFree_h; /* Head of the free semaphore list */
 HIDDEN semd_t semdTable[MAXPROC+2]; /* Array of semaphores */
 
+/* Helper function: traverseASL
+ * Traverse the ASL to find the correct position to insert a semaphore.
+ * Returns the semaphore node with the given semAdd.
+ * If the semaphore node does not exist, returns NULL.
+ */
 HIDDEN semd_t *traverseASL(int *semAdd, semd_t **prev) {
-    *prev = semd_h;  /* Start with the first dummy node */
+    *prev = semd_h;  
     semd_t *curr = semd_h->s_next; /* Skip the first dummy node */
     while (curr != NULL && curr->s_semAdd < semAdd) {
         *prev = curr;
