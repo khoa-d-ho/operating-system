@@ -52,12 +52,12 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
     semd_t *prev; /* Pointer to the previous semaphore node */
     semd_t *sem = traverseASL(semAdd, &prev);
     if (sem == NULL || sem->s_semAdd != semAdd) {
-    /* Semaphore does not exist */
+        /* Semaphore does not exist */
         if (semdFree_h == NULL)
-        /* No more free semaphores */
+            /* No more free semaphores */
             return TRUE;
         
-        /* Else, get a free semaphore */
+        /* Get a free semaphore */
         sem = semdFree_h;
         semdFree_h = sem->s_next;
         sem->s_semAdd = semAdd;
@@ -79,14 +79,14 @@ pcb_PTR removeBlocked(int *semAdd) {
     semd_t *prev;
     semd_t *sem = traverseASL(semAdd, &prev);
     if (sem == NULL || sem->s_semAdd != semAdd) {
-    /* Semaphore does not exist */
+        /* Semaphore does not exist */
         return NULL;
     }
     pcb_PTR p = removeProcQ(&(sem->s_procQ));
     p->p_semAdd = NULL;
 
     if (emptyProcQ(sem->s_procQ)) {
-    /* If the semaphore queue becomes empty, remove the semaphore */
+        /* If the semaphore queue becomes empty, remove the semaphore */
         prev->s_next = sem->s_next;
         sem->s_next = semdFree_h;
         semdFree_h = sem;
@@ -104,12 +104,12 @@ pcb_PTR outBlocked(pcb_PTR p) {
     semd_t *prev = semd_h;
     semd_t *sem = semd_h->s_next;
     while (sem != NULL) {
-    /* Traverse the ASL */
+        /* Traverse the ASL */
         pcb_PTR removed = outProcQ(&(sem->s_procQ), p);
         if (removed != NULL) {
-        /* If the process is found */
+            /* If the process is found */
             if (emptyProcQ(sem->s_procQ)) {
-            /* If the semaphore queue becomes empty, remove the semaphore */
+                /* If the semaphore queue becomes empty, remove the semaphore */
                 prev->s_next = sem->s_next;
                 sem->s_next = semdFree_h;
                 semdFree_h = sem;
@@ -132,7 +132,7 @@ pcb_PTR headBlocked(int *semAdd) {
     semd_t *prev;
     semd_t *sem = traverseASL(semAdd, &prev);
     if (sem == NULL || sem->s_semAdd != semAdd || emptyProcQ(sem->s_procQ)) {
-    /* Semaphore does not exist or the queue is empty */
+        /* Semaphore does not exist or the queue is empty */
         return NULL;
     }
     return headProcQ(sem->s_procQ);
