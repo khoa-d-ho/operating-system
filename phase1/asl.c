@@ -1,7 +1,7 @@
 #include "../h/asl.h"
 #include "../h/pcb.h"
 
-/************************** ASL.C ******************************
+/************************** ASL.C *******************************************
 *
 *  The implementation file for the Active Semaphore List. 
 *  
@@ -18,17 +18,20 @@
 *
 *  Written by Khoa Ho & Hieu Tran
 *  February 2025
+****************************************************************************/
+
+
+/* Global variables */
+HIDDEN semd_t *semd_h;                  /* Head of the active semaphore list */ 
+HIDDEN semd_t *semdFree_h;              /* Head of the free semaphore list */
+HIDDEN semd_t semdTable[MAXPROC+2];     /* Array of semaphores */
+
+/****************************************************************************
+* Helper function: traverseASL
+* Traverse the ASL to find the correct position to insert a semaphore.
+* Returns the semaphore node with the given semAdd.
+* If the semaphore node does not exist, returns NULL.
 */
-
-HIDDEN semd_t *semd_h; /* Head of the active semaphore list */ 
-HIDDEN semd_t *semdFree_h; /* Head of the free semaphore list */
-HIDDEN semd_t semdTable[MAXPROC+2]; /* Array of semaphores */
-
-/* Helper function: traverseASL
- * Traverse the ASL to find the correct position to insert a semaphore.
- * Returns the semaphore node with the given semAdd.
- * If the semaphore node does not exist, returns NULL.
- */
 HIDDEN semd_t *traverseASL(int *semAdd, semd_t **prev) {
     *prev = semd_h;  
     semd_t *curr = semd_h->s_next; /* Skip the first dummy node */
@@ -39,13 +42,19 @@ HIDDEN semd_t *traverseASL(int *semAdd, semd_t **prev) {
     return curr;
 }
 
+/****************************************************************************
+ * Function: insertBlocked
+ * Inserts a process in the queue of the semaphore with the given semAdd.
+ * If the semaphore does not exist, creates a new semaphore node.
+ * Returns TRUE if the semaphore is not found.
+ */
 int insertBlocked(int *semAdd, pcb_PTR p) {
     semd_t *prev;
     semd_t *sem = traverseASL(semAdd, &prev);
     if (sem == NULL || sem->s_semAdd != semAdd) {
-        if (semdFree_h == NULL) {
+        if (semdFree_h == NULL)
             return TRUE;
-        }
+        
         sem = semdFree_h;
         semdFree_h = sem->s_next;
         sem->s_semAdd = semAdd;
