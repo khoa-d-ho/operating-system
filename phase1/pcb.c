@@ -122,7 +122,7 @@ pcb_PTR headProcQ(pcb_PTR tp) {
 }
 
 int emptyChild (pcb_PTR p) {
-	return p->p_child == NULL;
+	return p->p_child == NULL; /* Hey Dr. G! <3 */
 }
 
 void insertChild (pcb_PTR prnt, pcb_PTR p) {
