@@ -1,25 +1,50 @@
-Initialized process control blocks   
-allocPcb ok   
-freed 10 entries   
-Inserting...   
-inserted 10 elements   
-outProcQ ok   
-Removing...   
-insertProcQ, removeProcQ and emptyProcQ ok   
-process queues module ok      
-checking process trees...
-Inserting...   
-Inserted 9 children   
-outChild ok   
-Removing...   
-insertChild, removeChild and emptyChild ok   
-process tree module ok      
-Initialized active semaphore list   
-insertBlocked test #1 started  
-insertBlocked test #2 started  
-removeBlocked test started   
-insertBlocked and removeBlocked ok   
-headBlocked and outBlocked ok   
-ASL module ok   
-So Long and Thanks for All the Fish
+p1 v(testsem)
+p2 was started
+p2 starts
+p2 v's successfully
+p2 is OK
+p3 is started
+p3 - WAITCLOCK OK
+p3 - CPU time correctly maintained
+first incarnation of p4 starts
+p5 starts
+p6 starts
+p7 starts
+second incarnation of p4 starts
+Bus Error: Access non-existent memory
+p4 is OK
+memory management trap
+Correct Support Structure Address
+Address Error: non-kuseg access w/KU=1
+High level SYS call from kernel mode process
+p1 knows p5 ended
+p8root starts
+child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p8root starts
+child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p8root starts
+child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p8root starts
+child1 starts
+child2 starts
+leaf process starts
+leaf process starts
+leaf process starts
+leaf process starts
+p1 finishes OK -- TTFN
 System halted 
