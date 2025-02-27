@@ -35,7 +35,7 @@ HIDDEN semd_t semdTable[MAXPROC+2]; /* Array of semaphores */
 HIDDEN semd_t *traverseASL(int *semAdd, semd_t **prev) {
     *prev = semd_h;  
     semd_t *curr = semd_h->s_next; /* Skip the first dummy node */
-    while (curr != NULL && curr->s_semAdd < semAdd) {
+    while (curr->s_semAdd < semAdd) {
         *prev = curr;
         curr = curr->s_next;
     }
@@ -51,7 +51,7 @@ HIDDEN semd_t *traverseASL(int *semAdd, semd_t **prev) {
 int insertBlocked(int *semAdd, pcb_PTR p) {
     semd_t *prev; /* Pointer to the previous semaphore node */
     semd_t *sem = traverseASL(semAdd, &prev);
-    if (sem == NULL || sem->s_semAdd != semAdd) {
+    if (sem->s_semAdd != semAdd) {
         /* Semaphore does not exist */
         if (semdFree_h == NULL)
             /* No more free semaphores */
@@ -78,7 +78,7 @@ int insertBlocked(int *semAdd, pcb_PTR p) {
 pcb_PTR removeBlocked(int *semAdd) {
     semd_t *prev;
     semd_t *sem = traverseASL(semAdd, &prev);
-    if (sem == NULL || sem->s_semAdd != semAdd) {
+    if (sem->s_semAdd != semAdd) {
         /* Semaphore does not exist */
         return NULL;
     }
@@ -129,9 +129,9 @@ pcb_PTR outBlocked(pcb_PTR p) {
  * If the semaphore does not exist or the queue is empty, returns NULL.
  */
 pcb_PTR headBlocked(int *semAdd) {
-    semd_t *prev;
+    semd_t *prev = semd_h;
     semd_t *sem = traverseASL(semAdd, &prev);
-    if (sem == NULL || sem->s_semAdd != semAdd || emptyProcQ(sem->s_procQ)) {
+    if (sem->s_semAdd != semAdd || emptyProcQ(sem->s_procQ)) {
         /* Semaphore does not exist or the queue is empty */
         return NULL;
     }
