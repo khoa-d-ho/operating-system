@@ -18,7 +18,7 @@ int deviceSemaphores[DEVICE_COUNT];
 cpu_t startTOD;             /* start time of day */
 
 extern void test();
-/* extern void uTLB_RefillHandler(); */
+extern void uTLB_RefillHandler();
 
 void main() {
 
@@ -47,7 +47,7 @@ void main() {
     }
 
     /* 5. interval timer */
-    LDIT(100000);  /* assign later !!! 100ms */
+    LDIT(CLOCKINTERVAL);  /* 100ms */
 
     /* Create and initialize first process */
     pcb_PTR firstProcess = allocPcb();
