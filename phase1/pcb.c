@@ -145,7 +145,7 @@ int emptyProcQ (pcb_PTR tp) {
  * of the tail pointer as well.
  */
 void insertProcQ (pcb_PTR *tp, pcb_PTR p) {
-    if (*tp == NULL) {
+    if (emptyProcQ(*tp)) {
         /* If queue is empty, insert the first element */
         *tp = p;
         p->p_next = *tp;
@@ -169,7 +169,7 @@ void insertProcQ (pcb_PTR *tp, pcb_PTR p) {
  * if necessary. 
  */
 pcb_PTR removeProcQ (pcb_PTR *tp) {
-    if (*tp == NULL) 
+    if (emptyProcQ(*tp)) 
         return NULL;    /* Empty queue */
 
     return outProcQ(tp, (*tp)->p_next); /* Remove the head */
@@ -184,11 +184,21 @@ pcb_PTR removeProcQ (pcb_PTR *tp) {
  * Note: p can point to any element of the process queue. 
  */
 pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p) {
-    if (*tp == NULL || p == NULL)
+    if (emptyProcQ(*tp) || p == NULL)
         return NULL;    /* Invalid input */
 
-    if (p->p_prev == NULL || p->p_next == NULL)
-        /* Ensure p is in the list */
+    /* Ensure p is in the list */
+    pcb_PTR temp = *tp;
+    int found = 0;
+    do {
+        if (temp == p) {
+            found = 1;
+            break;
+        }
+        temp = temp->p_next;
+    } while (temp != *tp);
+
+    if (!found)
         return NULL;
 
     if (p->p_prev == p && p->p_next == p)
@@ -214,7 +224,7 @@ pcb_PTR outProcQ (pcb_PTR *tp, pcb_PTR p) {
  * Return NULL if the process queue is empty.
  */
 pcb_PTR headProcQ(pcb_PTR tp) {
-    if (tp == NULL)
+    if (emptyProcQ(tp))
         return NULL;
     return tp->p_next;
 }
