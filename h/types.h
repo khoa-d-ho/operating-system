@@ -67,6 +67,54 @@ typedef struct state_t {
 
 } state_t, *state_PTR;
 
+/* process context */
+typedef struct context_t {
+	/* process context fields */
+	unsigned int c_stackPtr,		/* stack pointer value */
+				 c_status,			/* status reg value */
+				 c_pc;				/* PC address*/							
+} context_t;
+
+typedef struct support_t {
+	int 		sup_asid;				/* Process Id (asid) */
+	state_t		sup_exceptState[2];		/* stored excpt states */
+	context_t	sup_exceptContext[2]; 	/* pass up contexts */
+	/*... other fields to be added later*/
+} support_t;
+
+/* Exceptions related constants */
+#define PGFAULTEXCEPT 0
+#define GENERALEXCEPT 1
+
+/* process table entry type */
+typedef struct pcb_t {
+	/* process queue fields */
+    struct pcb_t   *p_next;							/* ptr to next entry			*/
+    struct pcb_t   *p_prev; 						/* ptr to previous entry		*/
+
+	/* process tree fields */
+	struct pcb_t	*p_prnt, 						/* ptr to parent				*/
+					*p_child,						/* ptr to 1st child				*/
+					*p_next_sib,					/* ptr to next sibling 			*/
+					*p_prev_sib;					/* ptr to prev. sibling			*/
+	
+	/* process status information */
+	state_t			p_s;							/* processor state				*/
+	cpu_t			p_time;							/* cpu time used by proc		*/
+	int				*p_semAdd;						/* ptr to semaphore on			*/
+													/* which proc is blocked		*/
+	/* support layer information */
+	/* support_t		*p_supportStruct;	 */					
+}  pcb_t, *pcb_PTR;
+
+/* Semaphore descriptor type*/
+typedef struct semd_t {
+	struct semd_t 	*s_next;
+	int 			*s_semAdd;
+	pcb_t 			*s_procQ;
+} semd_t;
+
+
 #define	s_at	s_reg[0]
 #define	s_v0	s_reg[1]
 #define s_v1	s_reg[2]
@@ -98,34 +146,5 @@ typedef struct state_t {
 #define s_ra	s_reg[28]
 #define s_HI	s_reg[29]
 #define s_LO	s_reg[30]
-
-/* process table entry type */
-typedef struct pcb_t {
-	/* process queue fields */
-    struct pcb_t   *p_next;							/* ptr to next entry			*/
-    struct pcb_t   *p_prev; 						/* ptr to previous entry		*/
-
-	/* process tree fields */
-	struct pcb_t	*p_prnt, 						/* ptr to parent				*/
-					*p_child,						/* ptr to 1st child				*/
-					*p_next_sib,					/* ptr to next sibling 			*/
-					*p_prev_sib;					/* ptr to prev. sibling			*/
-	
-	/* process status information */
-	state_t			p_s;							/* processor state				*/
-	cpu_t			p_time;							/* cpu time used by proc		*/
-	int				*p_semAdd;						/* ptr to semaphore on			*/
-													/* which proc is blocked		*/
-	/* support layer information */
-	/* support_t		*p_supportStruct;	 */					
-}  pcb_t, *pcb_PTR;
-
-/* Semaphore descriptor type*/
-typedef struct semd_t {
-	struct semd_t 	*s_next;
-	int 			*s_semAdd;
-	pcb_t 			*s_procQ;
-} semd_t;
-
 
 #endif
