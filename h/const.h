@@ -165,6 +165,14 @@
 #define	PGFAULTEXCEPT	    0
 #define GENERALEXCEPT	    1
 
+/* Constants for interrupt handling */
+#define PLT_LINE 1
+#define IT_LINE 2
+
+/* Structure for accessing device registers */
+#define DEV_REG_ADDR(line, dev) (memaddr) (0x10000054 + ((line - 3) * 0x80) + (dev * 0x10))
+#define DEV_REG_FIELD(line, dev, field) (* ((memaddr *) (DEV_REG_ADDR(line, dev) + field * 0x4)))
+
 /* Miscellaneous */
 #define UPROCMAX       8            /* Maximum number of user processes */
 #define PROCESS_PRIO   1            /* Default process priority */

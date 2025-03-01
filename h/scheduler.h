@@ -1,5 +1,5 @@
-#ifndef SCHEDULER
-#define SCHEDULER
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
 /************************* SCHEDULER.H *****************************
 *
