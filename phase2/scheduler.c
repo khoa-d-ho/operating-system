@@ -53,7 +53,6 @@ void scheduler() {
     LDST(&(currentProcess->p_s));
 }
 
-void loadNextState(pcb_t* nextState) {
-	currentProcess = nextState;
-    LDST(&currentProcess->p_s);
+void loadNextState(state_t state) {
+    LDST(&state);
 }

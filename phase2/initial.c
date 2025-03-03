@@ -27,7 +27,7 @@ void main() {
     passupvector_t *passupvector = (memaddr) PASSUPVECTOR;
     passupvector->tlb_refll_handler = (memaddr) uTLB_RefillHandler; 
     passupvector->tlb_refll_stackPtr = (memaddr) (RAMTOP);
-    passupvector->exception_handler = (memaddr) exceptionHandler;
+    passupvector->exception_handler = (memaddr) exceptionHandler; /* foobar */
     passupvector->exception_stackPtr = (memaddr) (RAMTOP);
 
     /* 3. init level 2 dsa */
