@@ -52,3 +52,8 @@ void scheduler() {
     /* Load the processor state of the current process */
     LDST(&(currentProcess->p_s));
 }
+
+void loadNextState(pcb_t* nextState) {
+	currentProcess = nextState;
+    LDST(&currentProcess->p_s);
+}
