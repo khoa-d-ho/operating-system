@@ -15,6 +15,7 @@
 
 /* A simple round-robin scheduler*/
 extern void scheduler();
+extern void loadNextState(state_t state);
 
 /***************************************************************/
 

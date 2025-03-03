@@ -27,7 +27,8 @@
 #define HIDDEN			  static
 #define EOS				    '\0'
 #define MAXINT       0x7FFFFFFF
-
+#define KUPON         0x00000008
+#define KUPOFF        0xFFFFFFF7
 #define NULL 			    ((void *)0xFFFFFFFF)
 
 /* device interrupts */

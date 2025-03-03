@@ -1,27 +1,51 @@
+
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
-#include "/usr/include/umps3/umps/libumps.h"
-#include "../h/const.h"
-#include "../h/types.h"
-#include "../h/pcb.h"
-#include "../h/asl.h"
-#include "../h/scheduler.h"
-#include "../h/initial.h"
-#include "../h/interrupts.h"
+#include "types.h"
+#include "const.h"
+#include "pcb.h"
 
-extern void         exceptionHandler();        
-extern void         uTLB_RefillHandler();      
-extern void         passUpOrDie(int exceptionType, state_t *exceptionState); 
-extern void         getCpuTime(state_t *exceptionState); 
-extern void         waitIO(state_t *exceptionState); 
-extern void         verhogen(state_t *exceptionState); 
-extern void         passeren(state_t *exceptionState); 
-extern void         tlbExceptionHandler(state_t *exceptionState); 
-extern void         programTrapHandler(state_t *exceptionState); 
-extern void         syscallHandler(state_t *exceptionState); 
-extern void         copyState(state_t *dest, state_t *src); 
+/* System Call Codes */
+#define CREATEPROCESS    1
+#define TERMPROCESS      2
+#define PASSEREN         3
+#define VERHOGEN         4
+#define WAITFORIO        5
+#define GETCPUT          6
+#define WAITFORCLOCK     7
+#define GETSUPPORTT      8
 
-/***************************************************************/
+/* External Variables */
+extern pcb_PTR currentProcess;
+extern pcb_PTR readyQueue;
+extern int processCount;
+extern int softBlockCount;
+extern int deviceSemaphores[];
+extern int clockSem;
+extern cpu_t TOD_start;
 
-#endif
+/* Main Exception Handler */
+void exceptionHandler();
+
+/* Specific Exception Handlers */
+void syscallHandler(state_t *excState);
+void tlbExceptionHandler(state_t *excState);
+void programTrapHandler(state_t *excState);
+
+/* System Calls */
+void createProcess();
+void terminateProcess(pcb_PTR current);
+void passeren(int *semAddress);
+pcb_PTR verhogen(int *semAddress);
+void waitIO();
+void getCpuTime();
+void waitClock();
+void getSupportData();
+
+/* Support Functions */
+void copyState(state_t *source, state_t *dest);
+void passUpOrDie(unsigned int passUpCode);
+void loadNextState(state_t state);
+
+#endif /* EXCEPTIONS_H */
