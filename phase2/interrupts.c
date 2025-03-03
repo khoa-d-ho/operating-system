@@ -20,8 +20,8 @@
 HIDDEN int getHighestPriority(unsigned int cause) {
     int line;
     /* Check interrupt lines, starting with highest priority (1) */
-    for (line = 1; line <= 7; line++) {
-        if ((cause & (1 << (line + 8))) != 0)
+    for (line = 1; line <= TERMINT; line++) {
+        if ((cause & (1 << (line + DEV_PER_INT))) != 0)
             return line;
     }
     return -1; /* No pending interrupt */
@@ -29,16 +29,16 @@ HIDDEN int getHighestPriority(unsigned int cause) {
 
 /* Function to find device with pending interrupt on a line */
 HIDDEN int getDevice(int line) {
-    if (line < 3 || line > 7)
+    if (line < DISKINT || line > TERMINT)
         return -1;
     
     /* Get the interrupting devices bitmap for this line */
-    memaddr* intDevBitMap = (memaddr*) (0x10000040 + (line - 3) * 4);
+    memaddr* intDevBitMap = (memaddr*) (INTDEVSBITMAP + (line - DISKINT) * WORDLEN);
     unsigned int bitmap = *intDevBitMap;
     
     int dev;
     /* Find the lowest device number with an interrupt pending */
-    for (dev = 0; dev < 8; dev++) {
+    for (dev = 0; dev < DEV_PER_INT; dev++) {
         if ((bitmap & (1 << dev)) != 0)
             return dev;
     }
@@ -74,7 +74,7 @@ void interruptHandler() {
 /* Handler for Processor Local Timer interrupts */
 void pltInterruptHandler() {
     /* Get old processor state from BIOS data page */
-    state_t *oldState = (state_t *) PLTOLDAREA;
+    state_t *oldState = (state_t *) BIOSDATAPAGE;
     
     /* Acknowledge the PLT interrupt by loading a new value */
     LDIT(QUANTUM);
@@ -145,9 +145,9 @@ void handleTerminal(int line, int dev, int isTransmit, unsigned int status) {
     /* Calculate semaphore index */
     int semIndex;
     if (isTransmit) {
-        semIndex = DEV_PER_INT * (line - 3) + dev + DEV_PER_INT; /* Transmit */
+        semIndex = DEV_PER_INT * (line - DISKINT) + dev + DEV_PER_INT; /* Transmit */
     } else {
-        semIndex = DEV_PER_INT * (line - 3) + dev;               /* Receive */
+        semIndex = DEV_PER_INT * (line - DISKINT) + dev;               /* Receive */
     }
     
     /* Get the semaphore */
@@ -160,17 +160,22 @@ void handleTerminal(int line, int dev, int isTransmit, unsigned int status) {
         DEV_REG_FIELD(line, dev, 1) = ACK; /* Receive command */
     }
     
+    /* Perform V operation - increment semaphore */
+    (*sem)++;
+    
     /* Unblock a process waiting on this semaphore */
-    pcb_PTR p = removeBlocked(sem);
-    if (p != NULL) {
-        /* Store status in v0 register */
-        p->p_s.s_v0 = status;
-        
-        /* Add to ready queue */
-        insertProcQ(&readyQueue, p);
-        
-        /* Decrease blocked count */
-        softBlockCount--;
+    if (*sem <= 0) {
+        pcb_PTR p = removeBlocked(sem);
+        if (p != NULL) {
+            /* Store status in v0 register */
+            p->p_s.s_v0 = status;
+            
+            /* Add to ready queue */
+            insertProcQ(&readyQueue, p);
+            
+            /* Decrease blocked count */
+            softBlockCount--;
+        }
     }
 }
 
@@ -185,16 +190,21 @@ void handleDevice(int line, int dev, unsigned int status) {
     /* Acknowledge the interrupt */
     DEV_REG_FIELD(line, dev, 1) = ACK;
     
+    /* Perform V operation - increment semaphore */
+    (*sem)++;
+    
     /* Unblock a process waiting on this semaphore */
-    pcb_PTR p = removeBlocked(sem);
-    if (p != NULL) {
-        /* Store status in v0 register */
-        p->p_s.s_v0 = status;
-        
-        /* Add to ready queue */
-        insertProcQ(&readyQueue, p);
-        
-        /* Decrease blocked count */
-        softBlockCount--;
+    if (*sem <= 0) {
+        pcb_PTR p = removeBlocked(sem);
+        if (p != NULL) {
+            /* Store status in v0 register */
+            p->p_s.s_v0 = status;
+            
+            /* Add to ready queue */
+            insertProcQ(&readyQueue, p);
+            
+            /* Decrease blocked count */
+            softBlockCount--;
+        }
     }
 }

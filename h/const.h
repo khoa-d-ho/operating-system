@@ -19,6 +19,7 @@
 #define TODLOADDR		  0x1000001C
 #define INTERVALTMR		0x10000020	
 #define TIMESCALEADDR	0x10000024
+#define INTDEVSBITMAP  0x10000040  /* Interrupting Devices Bit Map */
 
 
 /* utility constants */
@@ -171,8 +172,8 @@
 #define IT_LINE 2
 
 /* Structure for accessing device registers */
-#define DEV_REG_ADDR(line, dev) (memaddr) (0x10000054 + ((line - 3) * 0x80) + (dev * 0x10))
-#define DEV_REG_FIELD(line, dev, field) (* ((memaddr *) (DEV_REG_ADDR(line, dev) + field * 0x4)))
+#define DEV_REG_ADDRESS(line, dev) (memaddr) (0x10000054 + ((line - 3) * 0x80) + (dev * 0x10))
+#define DEV_REG_FIELD(line, dev, field) (* ((memaddr *) (DEV_REG_ADDRESS(line, dev) + field * 0x4)))
 
 /* Miscellaneous */
 #define UPROCMAX       8            /* Maximum number of user processes */
