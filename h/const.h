@@ -21,6 +21,10 @@
 #define TIMESCALEADDR	0x10000024
 #define INTDEVSBITMAP  0x10000040  /* Interrupting Devices Bit Map */
 
+/* Exception code macros */
+#define CAUSE_EXCCODE_MASK 0x0000007C
+#define CAUSE_EXCCODE_SHIFT 2
+#define CAUSE_GET_EXCCODE(cause) ((cause & CAUSE_EXCCODE_MASK) >> CAUSE_EXCCODE_SHIFT)
 
 /* utility constants */
 #define	TRUE			    1
