@@ -72,7 +72,7 @@ void syscallHandler(state_t *excState)
             terminateProcess(currentProcess); 
             break;}
             
-        /*SYS3 Passaren*/
+        /*SYS3 Passeren*/
         case PASSEREN: {
             /*Perform a P operation on a semaphore*/
             passeren((int*)excState->s_a1); 

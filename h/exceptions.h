@@ -28,8 +28,8 @@ void programTrapHandler();
 /* System Calls */
 void createProcess();
 void terminateProcess(pcb_PTR current);
-void passeren(int *semAddress);
-pcb_PTR verhogen(int *semAddress);
+void passeren();
+void verhogen();
 void waitIO();
 void getCpuTime();
 void waitClock();

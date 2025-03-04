@@ -142,6 +142,15 @@
 #define INT_NEWAREA       0x20001600    /* Interrupt new area */
 #define INT_OLDAREA       0x20001700    /* Interrupt old area */
 
+/* Interrupts in Cause Reg */
+#define INTERRUPT_PLT      0x00000200
+#define INTERRUPT_IT       0x00000400
+#define INTERRUPT_DISK     0x00000800
+#define INTERRUPT_FLASH    0x00001000
+#define INTERRUPT_NETW     0x00002000
+#define INTERRUPT_PRINT    0x00004000
+#define INTERRUPT_TERM    0x00008000
+
 /* Stack frame sizes and locations */
 #define FRAMESIZE      0x00001000    /* Size of a frame - 4KB */
 #define RAMTOP         0x20001000    /* Top of RAM for bootstrap */

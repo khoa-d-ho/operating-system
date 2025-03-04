@@ -15,15 +15,32 @@
 #include "../h/interrupts.h"
 #include "../h/initial.h"
 #include "../h/exceptions.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 /* Function to identify highest priority pending interrupt */
 HIDDEN int getHighestPriority(unsigned int cause) {
-    int line;
-    /* Check interrupt lines, starting with highest priority (1) */
-    for (line = 1; line <= TERMINT; line++) {
-        if ((cause & (1 << (line + DEV_PER_INT))) != 0)
-            return line;
+    if (cause & INTERRUPT_PLT) {
+        return PLT_LINE;  /* Processor Local Timer */
     }
+    if (cause & INTERRUPT_IT) {
+        return IT_LINE;   /* Interval Timer */
+    }
+    if (cause & INTERRUPT_DISK) {
+        return DISKINT;   /* Disk devices */
+    }
+    if (cause & INTERRUPT_FLASH) {
+        return FLASHINT;   /* Network devices */
+    }
+    if (cause & INTERRUPT_NETW) {
+        return NETWINT;  /* Flash devices */
+    }
+    if (cause & INTERRUPT_PRINT) {
+        return PRNTINT;   /* Printer devices */
+    }
+    if (cause & INTERRUPT_TERM) {
+        return TERMINT;   /* Terminal devices */
+    }
+    
     return -1; /* No pending interrupt */
 }
 
@@ -62,7 +79,7 @@ void interruptHandler() {
     } else if (line == IT_LINE) {
         /* Interval Timer interrupt */
         intervalTimerHandler();
-    } else if (line >= 3 && line <= 7) {
+    } else if (line >= DISKINT && line <= TERMINT) {
         /* Device interrupt */
         deviceInterruptHandler(line);
     }
@@ -83,13 +100,8 @@ void pltInterruptHandler() {
         /* Increase CPU time used by current process */
         currentProcess->p_time += QUANTUM;
         
-        /* Save processor state to PCB */
         copyState(&(currentProcess->p_s), oldState);
-        
-        /* Put current process back to ready queue */
         insertProcQ(&readyQueue, currentProcess);
-        
-        /* Clear current process pointer */
         currentProcess = NULL;
     }
 }
@@ -100,13 +112,19 @@ void intervalTimerHandler() {
     LDIT(CLOCKINTERVAL);
     
     /* Get pointer to the clock semaphore */
-    int *clockSem = &(deviceSemaphores[CLOCKINTERVAL]);
+    int *clockSem = &(deviceSemaphores[DEVICE_COUNT-1]);
     
     /* Unblock all processes waiting on the clock semaphore */
     pcb_PTR p;
     while ((p = removeBlocked(clockSem)) != NULL) {
         insertProcQ(&readyQueue, p);
         softBlockCount--;
+    }
+
+    *clockSem = 0;
+
+    if (currentProcess == mkEmptyProcQ()) {
+        loadNextState(currentProcess->p_s);
     }
 }
 
@@ -150,7 +168,6 @@ void handleTerminal(int line, int dev, int isTransmit, unsigned int status) {
         semIndex = DEV_PER_INT * (line - DISKINT) + dev;               /* Receive */
     }
     
-    /* Get the semaphore */
     int *sem = &(deviceSemaphores[semIndex]);
     
     /* Acknowledge the interrupt */
@@ -160,7 +177,6 @@ void handleTerminal(int line, int dev, int isTransmit, unsigned int status) {
         DEV_REG_FIELD(line, dev, 1) = ACK; /* Receive command */
     }
     
-    /* Perform V operation - increment semaphore */
     (*sem)++;
     
     /* Unblock a process waiting on this semaphore */
@@ -169,11 +185,8 @@ void handleTerminal(int line, int dev, int isTransmit, unsigned int status) {
         if (p != NULL) {
             /* Store status in v0 register */
             p->p_s.s_v0 = status;
-            
-            /* Add to ready queue */
+    
             insertProcQ(&readyQueue, p);
-            
-            /* Decrease blocked count */
             softBlockCount--;
         }
     }
@@ -199,11 +212,8 @@ void handleDevice(int line, int dev, unsigned int status) {
         if (p != NULL) {
             /* Store status in v0 register */
             p->p_s.s_v0 = status;
-            
-            /* Add to ready queue */
+
             insertProcQ(&readyQueue, p);
-            
-            /* Decrease blocked count */
             softBlockCount--;
         }
     }
