@@ -16,22 +16,14 @@
 #define WAITFORCLOCK     7
 #define GETSUPPORTT      8
 
-/* External Variables */
-extern pcb_PTR currentProcess;
-extern pcb_PTR readyQueue;
-extern int processCount;
-extern int softBlockCount;
-extern int deviceSemaphores[];
-extern int clockSem;
-extern cpu_t TOD_start;
 
 /* Main Exception Handler */
 void exceptionHandler();
 
 /* Specific Exception Handlers */
 void syscallHandler(state_t *excState);
-void tlbExceptionHandler(state_t *excState);
-void programTrapHandler(state_t *excState);
+void tlbExceptionHandler();
+void programTrapHandler();
 
 /* System Calls */
 void createProcess();

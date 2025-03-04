@@ -100,7 +100,7 @@ void intervalTimerHandler() {
     LDIT(CLOCKINTERVAL);
     
     /* Get pointer to the clock semaphore */
-    int *clockSem = &(deviceSemaphores[CLOCKINT]);
+    int *clockSem = &(deviceSemaphores[CLOCKINTERVAL]);
     
     /* Unblock all processes waiting on the clock semaphore */
     pcb_PTR p;

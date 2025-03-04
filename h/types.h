@@ -52,7 +52,7 @@ typedef struct {
 typedef struct passupvector {
     unsigned int tlb_refll_handler;
     unsigned int tlb_refll_stackPtr;
-    unsigned int execption_handler;
+    unsigned int exception_handler;
     unsigned int exception_stackPtr;
 } passupvector_t;
 
@@ -104,7 +104,7 @@ typedef struct pcb_t {
 	int				*p_semAdd;						/* ptr to semaphore on			*/
 													/* which proc is blocked		*/
 	/* support layer information */
-	/* support_t		*p_supportStruct;	 */					
+	support_t		*p_supportStruct;					
 }  pcb_t, *pcb_PTR;
 
 /* Semaphore descriptor type*/

@@ -1,3 +1,12 @@
+/****************************************************************************
+ * initial.c
+ *
+ * This module initializes the nucleus of the operating system.
+ *
+ * Written by Khoa Ho & Hieu Tran
+ * February 2025
+ ****************************************************************************/
+
 #include "/usr/include/umps3/umps/libumps.h"
 #include "../h/const.h"
 #include "../h/types.h"
@@ -9,26 +18,30 @@
 #include "../h/interrupts.h"
 
 /* 1. declare level 3 global vars */
-
 int processCount;            
 int softBlockCount;                 
 pcb_PTR readyQueue;               
 pcb_PTR currentProcess;          
 int deviceSemaphores[DEVICE_COUNT];  
-cpu_t startTOD;             /* start time of day */
+cpu_t TOD_start;             /* start time of day */
 
 extern void test();
 extern void uTLB_RefillHandler();
 
 void main() {
-
     /* 2. pass up vectors */
-
-    passupvector_t *passupvector = (memaddr) PASSUPVECTOR;
+    passupvector_t *passupvector = (passupvector_t *) PASSUPVECTOR;
     passupvector->tlb_refll_handler = (memaddr) uTLB_RefillHandler; 
     passupvector->tlb_refll_stackPtr = (memaddr) (RAMTOP);
-    passupvector->exception_handler = (memaddr) exceptionHandler; /* foobar */
+    passupvector->exception_handler = (memaddr) exceptionHandler; 
     passupvector->exception_stackPtr = (memaddr) (RAMTOP);
+
+    /* Store current time of day */
+    STCK(TOD_start);
+
+    /* Get RAM top from device registers (if needed) */
+    devregarea_t *devrega = (devregarea_t*) RAMBASEADDR;
+    memaddr ramtop = (devrega->rambase) + (devrega->ramsize);
 
     /* 3. init level 2 dsa */
     initPcbs();
@@ -41,7 +54,7 @@ void main() {
     currentProcess = NULL;
 
     /* init device semaphores */
-    int i = 0;
+    int i;
     for (i = 0; i < DEVICE_COUNT; i++) {
         deviceSemaphores[i] = 0;
     }
@@ -55,20 +68,19 @@ void main() {
         PANIC();  
     }
 
-    /* Initialize process state */
-
     /* Set up first process */
     firstProcess->p_s.s_pc = (memaddr)test;    /* Set PC to test */
-    firstProcess->p_s.s_t9 = (memaddr)test;  /* Set t9 to test */
-    firstProcess->p_s.s_status = ALLOFF | IECON | IMON | TEBITON;  /* Set status register */
-    firstProcess->p_s.s_sp = RAMTOP - FRAMESIZE;  /* Set stack pointer to top of RAM */
+    firstProcess->p_s.s_t9 = (memaddr)test;    /* Set t9 to test */
+    firstProcess->p_s.s_status = ALLOFF | IEPON | IMON | TEBITON;  /* Set status register */
+    firstProcess->p_s.s_sp = ramtop - FRAMESIZE;  /* Set stack pointer to top of RAM */
+    firstProcess->p_time = 0;
+	firstProcess->p_semAdd = NULL;
+	firstProcess->p_supportStruct = NULL;
+    firstProcess->p_prnt = NULL;
     
     /* Add to ready queue and update process count */
     insertProcQ(&readyQueue, firstProcess);
     processCount++;
-
-    /* Read Start time */
-    STCK(startTOD);
 
     /* Call scheduler */
     scheduler();

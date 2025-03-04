@@ -261,7 +261,7 @@ void getSupportData() {
 }
 
 void copyState(state_t *source, state_t *dest) {
-    dest->s_asid = source->s_asid;
+    dest->s_entryHI = source->s_entryHI;
     dest->s_cause = source->s_cause;
     dest->s_status = source->s_status;
     dest->s_pc = source->s_pc;
