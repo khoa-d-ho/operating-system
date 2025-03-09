@@ -20,7 +20,7 @@
  * The scheduler uses a time slice of 5 milliseconds. If a process does not
  * complete within this time, it is preempted and the next process in the
  * ready queue is scheduled.
- ****************************************************************************/
+ */
 void scheduler() {
     if(!emptyProcQ(readyQueue)) {
         /* Initializes current process */

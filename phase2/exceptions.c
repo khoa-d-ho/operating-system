@@ -4,13 +4,13 @@ void exceptionHandler() {
     state_t *excState = (state_t *) BIOSDATAPAGE;
     int excCode = CAUSE_GET_EXCCODE(excState->s_cause);
 
-	if(excCode == 0)  {
+	if (excCode == 0)  {
 		interruptHandler(excState);
 	}
-	else if(excCode <= TLBINVLDL) {
+	else if (excCode <= TLBINVLDL) {
 		tlbExceptionHandler();
 	}
-	else if(excCode == SYSCALL_EXCEPTION) {
+	else if (excCode == SYSCALL_EXCEPTION) {
 		syscallHandler(excState);
 	}
 	else {
@@ -99,8 +99,9 @@ void terminateProcess(pcb_PTR current) {
 	while (emptyChild(current) == FALSE) {
 		terminateProcess(removeChild(current));
 	}
+
 	if ((current->p_semAdd) != NULL) {
-		if ((current->p_semAdd >= &deviceSemaphores[0]) && (current->p_semAdd <= &deviceSemaphores[DEVICE_COUNT-1])) {
+		if ((current->p_semAdd >= &deviceSemaphores[0]) && (current->p_semAdd <= &deviceSemaphores[CLOCK])) {
 			softBlockCount--;
 		} else {
             int *semAddress = current->p_semAdd;
@@ -224,7 +225,6 @@ void waitClock() {
         loadNextState(currentProcess->p_s);
     }
 	
-    /*Insert process onto asl, waiting on pseudoclock*/
     softBlockCount++;
     oldState->s_pc += WORDLEN;
     currentProcess->p_time += (TOD_stop - TOD_start);

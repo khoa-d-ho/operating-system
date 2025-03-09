@@ -131,6 +131,7 @@
 /* Device Constants */
 #define DEVICE_COUNT        49
 #define DEV_PER_INT         8
+#define CLOCK           DEVICE_COUNT - 1
 
 /************************************/
 
