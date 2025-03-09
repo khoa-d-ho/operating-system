@@ -12,10 +12,13 @@
 #include "../h/types.h"
 #include "../h/asl.h"
 #include "../h/pcb.h"
+#include "../h/initial.h"
 
 /* A simple round-robin scheduler*/
 extern void scheduler();
+
 extern void loadNextState(state_t state);
+extern void copyState(state_t *source, state_t *dest);
 
 /***************************************************************/
 

@@ -104,7 +104,7 @@ typedef struct pcb_t {
 	int				*p_semAdd;						/* ptr to semaphore on			*/
 													/* which proc is blocked		*/
 	/* support layer information */
-	support_t		*p_supportStruct;					
+	support_t		*p_supportStruct;			
 }  pcb_t, *pcb_PTR;
 
 /* Semaphore descriptor type*/
@@ -112,7 +112,7 @@ typedef struct semd_t {
 	struct semd_t 	*s_next;
 	int 			*s_semAdd;
 	pcb_t 			*s_procQ;
-} semd_t;
+} semd_t, *semd_PTR;
 
 
 #define	s_at	s_reg[0]

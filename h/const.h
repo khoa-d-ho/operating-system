@@ -46,7 +46,17 @@
 #define DEVINTNUM		  5		  /* interrupt lines used by devices */
 #define DEVPERINT		  8		  /* devices per interrupt line */
 #define DEVREGLEN		  4		  /* device register field length in bytes, and regs per dev */	
-#define DEVREGSIZE	  16 		/* device register size in bytes */
+#define DEVREGSIZE	      16 	   /* device register size in bytes */
+
+/* Device Interrupt Masks */
+#define DEV0 	0x00000001
+#define DEV1 	0x00000002
+#define DEV2 	0x00000004
+#define DEV3 	0x00000008
+#define DEV4 	0x00000010
+#define DEV5 	0x00000020
+#define DEV6 	0x00000040
+#define DEV7 	0x00000080
 
 /* device register field number for non-terminal devices */
 #define STATUS			  0
@@ -96,17 +106,27 @@
 
 /* Timing constants */
 #define QUANTUM         5000      /* 5ms in microseconds */
-#define CLOCKINTERVAL   100000    /* 100ms in microseconds */
+#define CLOCKINTERVAL   100000UL    /* 100ms in microseconds */
 
 /* system call codes */
-#define	CREATETHREAD	1	/* create thread */
-#define	TERMINATETHREAD	2	/* terminate thread */
-#define	PASSERN			3	/* P a semaphore */
-#define	VERHOGEN		4	/* V a semaphore */
-#define	WAITIO			5	/* delay on a io semaphore */
-#define	GETCPUTIME		6	/* get cpu time used to date */
-#define	WAITCLOCK		7	/* delay on the clock semaphore */
-#define	GETSPTPTR		8	/* return support structure ptr. */
+#define CREATEPROCESS    1
+#define TERMPROCESS      2
+#define PASSEREN         3
+#define VERHOGEN         4
+#define WAITFORIO        5
+#define GETCPUTIME       6
+#define WAITFORCLOCK     7
+#define GETSUPPORT       8
+
+/*Line Constants*/
+#define PROCESSOR 0
+#define INTERVALTIMER 1
+#define PLTIMER 2
+#define DISK 3
+#define FLASH 4
+#define NETWORK 5
+#define PRINTER 6
+#define TERMINAL 7
 
 /* Device Constants */
 #define DEVICE_COUNT        49
@@ -115,7 +135,7 @@
 /************************************/
 
 /* Status register constants */
-#define ALLOFF  0x00000000
+#define ALLOFF  0x0
 #define UMON    0x00000008      /* User Mode ON */
 #define UMOFF   0x00000008      /* User Mode OFF (kernel on) */
 #define IMON    0x0000FF00      /* Interrupt Masked */
@@ -124,6 +144,7 @@
 #define TEBITON	0x08000000		/* Timer enabled bit ON */
 #define CAUSE	0x0000007C		/* Turn on the cause bits for exception handling */
 #define CLEARCAUSE 0xFFFFFF00
+#define XLVALUE 0xFFFFFFFF
 
 /* Memory Management Registers */
 #define ASIDMASK       0x00000FC0    /* ASID field mask */
@@ -153,7 +174,7 @@
 
 /* Stack frame sizes and locations */
 #define FRAMESIZE      0x00001000    /* Size of a frame - 4KB */
-#define RAMTOP         0x20001000    /* Top of RAM for bootstrap */
+#define NUCLEUSSTACKTOP         0x20001000    /* Top of RAM for bootstrap */
 
 /* Error Codes */
 #define CREATENOGOOD   -1            /* Create process failure */
@@ -195,11 +216,3 @@
 #define SERTRINT       5            /* Serial receive interrupt */
 
 #endif
-
-
-
-
-
-
-
-

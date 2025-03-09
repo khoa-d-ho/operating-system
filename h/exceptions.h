@@ -2,26 +2,20 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
-#include "types.h"
-#include "const.h"
-#include "pcb.h"
-
-/* System Call Codes */
-#define CREATEPROCESS    1
-#define TERMPROCESS      2
-#define PASSEREN         3
-#define VERHOGEN         4
-#define WAITFORIO        5
-#define GETCPUT          6
-#define WAITFORCLOCK     7
-#define GETSUPPORTT      8
-
+#include "../h/const.h"
+#include "../h/types.h"
+#include "../h/pcb.h"
+#include "../h/asl.h"
+#include "../h/initial.h"
+#include "../h/scheduler.h"
+#include "../h/interrupts.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 /* Main Exception Handler */
 void exceptionHandler();
 
 /* Specific Exception Handlers */
-void syscallHandler(state_t *excState);
+void syscallHandler();
 void tlbExceptionHandler();
 void programTrapHandler();
 
@@ -31,13 +25,13 @@ void terminateProcess(pcb_PTR current);
 void passeren();
 void verhogen();
 void waitIO();
-void getCpuTime();
+void getCPUTime();
 void waitClock();
 void getSupportData();
 
 /* Support Functions */
 void copyState(state_t *source, state_t *dest);
-void passUpOrDie(unsigned int passUpCode);
-void loadNextState(state_t state);
+void passUpOrDie(int passUpCode);
 
-#endif /* EXCEPTIONS_H */
+#endif
+

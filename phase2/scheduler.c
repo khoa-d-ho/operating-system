@@ -1,3 +1,5 @@
+#include "../h/scheduler.h"
+
 /****************************************************************************
  * scheduler.c
  * 
@@ -8,9 +10,6 @@
  * Written by Khoa Ho & Hieu Tran
  * February 2025
  ****************************************************************************/
-
-#include "../h/scheduler.h"
-#include "../h/initial.h"
 
 /*****************************************************************************
  * Function: scheduler
@@ -23,36 +22,44 @@
  * ready queue is scheduled.
  ****************************************************************************/
 void scheduler() {
-    /* Check if the ready queue is empty */
-    if (emptyProcQ(readyQueue)) {
-        /* If there are no processes in the system, halt */
-        if (processCount == 0) {
+    if(!emptyProcQ(readyQueue)) {
+        /* Initializes current process */
+        currentProcess = removeProcQ(&readyQueue);
+        setTIMER(QUANTUM);
+        STCK(TOD_start);
+        loadNextState(currentProcess->p_s);
+    }
+    else {
+        if(processCount == 0){
+            /* If no more processes */
             HALT();
         }
-        /* If there are processes but all are blocked, wait */
-        else if (softBlockCount > 0) {
-            /* Set status register to enable interrupts and disable PLT */
-            setSTATUS(IECON | IMON | TEBITON);
-            LDIT(MAXINT);
+        
+        else if(processCount > 0 && softBlockCount > 0) {
+            /* If blocked processes */
+            setTIMER(XLVALUE);
+            setSTATUS(ALLOFF | IECON | IMON | TEBITON);
             WAIT();
         }
-        /* Deadlock detected, invoke PANIC */
-        else {
+        else if(processCount > 0 && softBlockCount <= 0){
+            /* If deadlocked */
             PANIC();
         }
     }
-
-    /* Remove the head process from the ready queue */
-    pcb_PTR nextProcess = removeProcQ(&readyQueue);
-    currentProcess = nextProcess;
-
-    /* Load 5 miliseconds on the PLT */
-    LDIT(5000);
-
-    /* Load the processor state of the current process */
-    LDST(&(currentProcess->p_s));
 }
 
 void loadNextState(state_t state) {
     LDST(&state);
+}
+
+void copyState(state_t *source, state_t *dest) {
+    dest->s_entryHI = source->s_entryHI;
+    dest->s_cause = source->s_cause;
+    dest->s_status = source->s_status;
+    dest->s_pc = source->s_pc;
+    
+    int i;
+    for (i = 0; i < STATEREGNUM; i++) {
+        dest->s_reg[i] = source->s_reg[i];
+    }
 }

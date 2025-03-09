@@ -1,144 +1,83 @@
-#include "../h/const.h"
-#include "../h/types.h"
-#include "../h/pcb.h"
-#include "../h/asl.h"
-#include "../h/initial.h"
 #include "../h/exceptions.h"
-#include "../h/scheduler.h"
-#include "../h/interrupts.h"
-#include "/usr/include/umps3/umps/libumps.h"
-
-HIDDEN cpu_t currentTime;
 
 void exceptionHandler() {    
-    /* Get the exception state and code from the BIOS data page */
     state_t *excState = (state_t *) BIOSDATAPAGE;
-    int excCode = (CAUSE_GET_EXCCODE(excState->s_cause));
+    int excCode = CAUSE_GET_EXCCODE(excState->s_cause);
 
-    switch (excCode) {
-        /* code 0 */
-        case(INTERRUPTS):
-            interruptHandler();
-            break;
-        /* code 1-3 */
-        case(TLBMOD): 
-        case(TLBINVLD):
-        case(TLBINVLDL):
-            tlbExceptionHandler(excState);
-            break;
-
-        /* code 4-7, 9-12 */
-        case(ADDRINVLD):
-        case(ADDRINVLDS):
-        case(BUSINVLD):
-        case(BUSINVLDL):
-        case(BREAKPOINT):
-        case(RESERVEDINST):
-        case(COPROCUNUSABLE):
-        case(ARITHOVERFLOW):
-            programTrapHandler(excState);
-            break;
-
-        /* code 8 */
-        case(SYSCALL_EXCEPTION):
-            syscallHandler(excState);
-            break;
-    }
+	if(excCode == 0)  {
+		interruptHandler(excState);
+	}
+	else if(excCode <= TLBINVLDL) {
+		tlbExceptionHandler();
+	}
+	else if(excCode == SYSCALL_EXCEPTION) {
+		syscallHandler(excState);
+	}
+	else {
+		passUpOrDie(GENERALEXCEPT);
+	}
 }
 
-void syscallHandler(state_t *excState)
-{
+void syscallHandler() {
+    state_t *excState = (state_t *) BIOSDATAPAGE;
     int syscallCode = excState->s_a0;
     
-    /*Checks KUP to see if process is in user mode*/
-    if(excState->s_status & KUPON && syscallCode <= 8)
-    {
-        /*Attempted a syscall in user mode, trigger a program trap*/
-        programTrapHandler(excState);
+    if (currentProcess->p_s.s_status & KUPON && syscallCode <= 8) {
+        programTrapHandler();
     }
     
-    /*Switch case using parameter value to determine current syscall code, then calls other methods to act*/
-    switch(syscallCode) 
-    {
-        /*SYS1 Create Process*/
+    switch (syscallCode) {
         case CREATEPROCESS: {
-            /*Creates a new process for use*/
-            createProcess(excState); 
-            break;}
+            createProcess(); 
+        }
             
-        /*SYS2 Terminate Process*/	
         case TERMPROCESS: {
-            /*Terminates the current process and all of its progeny*/
-            terminateProcess(currentProcess); 
-            break;}
+            terminateProcess(currentProcess);
+        }
             
-        /*SYS3 Passeren*/
         case PASSEREN: {
-            /*Perform a P operation on a semaphore*/
-            passeren((int*)excState->s_a1); 
-            break;}
+            passeren();
+        }
             
-        /*SYS4 Verhogen*/	
         case VERHOGEN: {
-            /*Perform a V operation on a semaphore*/
-            verhogen((int*)excState->s_a1); 
-            break;}
+            verhogen(); 
+        }
             
-        /*SYS5 Wait for IO*/
         case WAITFORIO: {
-            /*Waits for input or output from a device*/
             waitIO(); 
-            break;}
+        }
             
-        /*SYS6 Get CPU Time*/
-        case GETCPUT: {
-            /*Stores accumulated CPU time in v0 and performs load state*/
-            getCpuTime();
-            break;
-            }
+        case GETCPUTIME: {
+            getCPUTime();
+        }
             
-        /*SYS7 Wait for Clock*/
         case WAITFORCLOCK: {
-            /*Performs a P operation on the pseudo-clock semaphore and blocks the current process*/
             waitClock(); 
-            break;}
+        }
             
-        /*SYS8 Get Support Data*/
-        case GETSUPPORTT: {
-            /*Stores pointer to support structure in v0 and performs load state*/
+        case GETSUPPORT: {
             getSupportData();
-            break;
-            }
+        }
             
-        /*Sycall code is greater than 8*/
         default: {			
-            /*Pass up or Die*/
-            passUpOrDie(GENERALEXCEPT); }
-    }
-    
-    /*Return to current process*/
-    if(currentProcess != NULL) {
-        loadNextState(currentProcess->p_s);
-    }
-    /*No process to return to, call scheduler*/
-    else{
-        scheduler();
+            passUpOrDie(GENERALEXCEPT); 
+        }
     }
 }
 
-/* sys1 no input */
 void createProcess() {
+    state_PTR oldState = (state_PTR) BIOSDATAPAGE;
     pcb_PTR newProc = allocPcb();
     
     if (newProc == NULL) {
-        currentProcess->p_s.s_v0 = -1;
+        oldState->s_v0 = -1;
     } else {
         /* Set the new process state to state stored in a1 */
-        state_t *toCheck = (state_t*) currentProcess->p_s.s_a1;
+        state_t *toCheck = (state_t*) oldState->s_a1;
         copyState(toCheck, &newProc->p_s);
 
         /* Copying over the support struct ... */
-        support_t *supportData = (support_t*) currentProcess->p_s.s_a2;
+        support_t *supportData = (support_t*) oldState->s_a2;
 
         if (supportData != NULL) {
             newProc->p_supportStruct = supportData;
@@ -148,8 +87,10 @@ void createProcess() {
         processCount++;
         insertProcQ(&readyQueue, newProc);
         insertChild(currentProcess, newProc);
-        currentProcess->p_s.s_v0 = 0;
+        oldState->s_v0 = 0;
     }
+    oldState->s_pc += WORDLEN;
+    copyState(oldState, &(currentProcess->p_s));
     loadNextState(currentProcess->p_s);
 }
 
@@ -159,7 +100,7 @@ void terminateProcess(pcb_PTR current) {
 		terminateProcess(removeChild(current));
 	}
 	if ((current->p_semAdd) != NULL) {
-		if ((current->p_semAdd >= &deviceSemaphores[0]) && (current->p_semAdd <= &clockSem)) {
+		if ((current->p_semAdd >= &deviceSemaphores[0]) && (current->p_semAdd <= &deviceSemaphores[DEVICE_COUNT-1])) {
 			softBlockCount--;
 		} else {
             int *semAddress = current->p_semAdd;
@@ -170,114 +111,144 @@ void terminateProcess(pcb_PTR current) {
 			processCount--;
 		}
 	} else {
-		pcb_PTR p = outProcQ(&readyQ, current);
-        if p != mkEmptyProcQ()) {
+		pcb_PTR p = outProcQ(&readyQueue, current);
+        if (p != mkEmptyProcQ()) {
 			processCount--;
 		}
 	}
 
 	if (current == currentProcess) {
-		if (!emptyChild(current)) 
+		if (!emptyChild(current))  {
             outChild(currentProcess);
+        }
 		currentProcess = mkEmptyProcQ();
-		processCount--;    /* diff from djt */    
+		processCount--;  
 		scheduler();
 	}
+    freePcb(current);
 }
 
 /* sys3 passeren */
-void passeren(int *semAddress) { 
+void passeren() { 
+    state_PTR oldState = (state_PTR) BIOSDATAPAGE;
+    cpu_t TOD_current;
+    STCK(TOD_current);
+    int *semAddress = (int *) oldState->s_a1;
+
     (*semAddress)--;
+
+    oldState->s_pc += WORDLEN;
+    copyState(oldState, &(currentProcess->p_s));
     if (*semAddress < 0) {
         insertBlocked(semAddress, currentProcess);
-        softBlockCount++;
+        currentProcess->p_time += (TOD_current - TOD_start);
         currentProcess = NULL;
         scheduler();
     }
-    loadNextState(currentProcess->p_s);;
+    loadNextState(currentProcess->p_s);
 }
 
 /* sys4 verhogen */
-pcb_PTR verhogen(int *semAddress) { 
-    (*semAdd)++;
+void verhogen() { 
+    state_PTR oldState = (state_PTR) BIOSDATAPAGE;
+    int *semAddress = (int *) oldState->s_a1;
+    (*semAddress)++;
     pcb_PTR p;
-    if (*semAdd <= 0) {
+    if (*semAddress <= 0) {
         p = removeBlocked(semAddress);
         if (p != NULL) {
             insertProcQ(&readyQueue, p);
-            softBlockCount--;
         }
     }
-    loadNextState(currentProcess->p_s);;
-    return p;
+    oldState->s_pc += WORDLEN;
+    copyState(oldState, &(currentProcess->p_s));
+    loadNextState(currentProcess->p_s);
 }
 
 /* sys5 wait for io */
 void waitIO() {
+    cpu_t TOD_stop;
+    STCK(TOD_stop);
+    state_PTR oldState = (state_PTR) BIOSDATAPAGE;
+    
     /* Get line, device number, and possible terminal read operations */
-    int line = currentProcess->p_s.s_a1;
-    int dev = currentProcess->p_s.s_a2;
-    int term_flag = currentProcess->p_s.s_a3;
+    int line = oldState->s_a1;
+    int dev = oldState->s_a2;
+    int term_flag = oldState->s_a3;
 
     /* Calculate semaphore index */
     int semIndex;
     if (term_flag && line == TERMINT) {
         /* Terminal device*/
-        semIndex = dev + (line - 3) * DEVPERINT + DEVPERINT; 
+        semIndex = dev + (line - DISKINT) * DEVPERINT + DEVPERINT; 
     } else {
         /* Non-terminal device */
-        semIndex = dev + (line - 3) * DEVPERINT;             
+        semIndex = dev + (line - DISKINT) * DEVPERINT;             
     }
 
-    /* Block the process */
-    passeren(&deviceSemaphores[semIndex]); 
+    deviceSemaphores[semIndex]--;
+    if(deviceSemaphores[semIndex] < 0) {
+        oldState->s_pc += WORDLEN;
+        copyState(oldState, &(currentProcess->p_s));
+        currentProcess->p_time += (TOD_stop - TOD_start);
+        insertBlocked(&(deviceSemaphores[semIndex]), currentProcess);
+        
+        currentProcess = mkEmptyProcQ();
+        softBlockCount++;
+        scheduler();
+    }
+    loadNextState(currentProcess->p_s);
 }
 
 /* sys6 get cpu time */
-void getCpuTime() {
-    /* Initialize current time */
-    cpu_t TOD_c;
-    STCK(TOD_c);
-    
-    /* Calculate total CPU time: stored time + time spent in current quantum */
-    TOD_c = (TOD_c - TOD_start) + currentProcess->p_time;
-    currentProcess->p_s.s_v0 = TOD_c;
+void getCPUTime() {
+    cpu_t TOD_current;
+    STCK(TOD_current);    
+    state_PTR oldState = (state_PTR) BIOSDATAPAGE;
+    oldState->s_v0 = currentProcess->p_time + TOD_current - TOD_start;
+    oldState->s_pc += WORDLEN;
 
-    /* Return to the process */
-    loadNextState(currentProcess->p_s);;
+    copyState(oldState, &(currentProcess->p_s));
+    loadNextState(currentProcess->p_s);
 }
-
 
 /* sys7 wait for clock */
 void waitClock() {
-    /* Block the process */
-    passeren(&deviceSemaphores[DEVICE_COUNT]);
-}
+    int TOD_stop;
+	STCK(TOD_stop);
+	state_PTR oldState = (state_PTR) BIOSDATAPAGE;
 
-/* sys8 get support data */
-void getSupportData() {
-    currentProcess->p_s.s_v0 = (int) currentProcess->p_supportStruct;
-    loadNextState(currentProcess->p_s);;
-}
+    (deviceSemaphores[DEVICE_COUNT-1])--;
 
-void copyState(state_t *source, state_t *dest) {
-    dest->s_entryHI = source->s_entryHI;
-    dest->s_cause = source->s_cause;
-    dest->s_status = source->s_status;
-    dest->s_pc = source->s_pc;
-    
-    int i;
-    for (i = 0; i < STATEREGNUM; i++) {
-        dest->s_reg[i] = source->s_reg[i];
+    if (deviceSemaphores[DEVICE_COUNT-1] >= 0) {
+        loadNextState(currentProcess->p_s);
     }
+	
+    /*Insert process onto asl, waiting on pseudoclock*/
+    softBlockCount++;
+    oldState->s_pc += WORDLEN;
+    currentProcess->p_time += (TOD_stop - TOD_start);
+    copyState(oldState, &(currentProcess->p_s));
+    insertBlocked(&(deviceSemaphores[DEVICE_COUNT-1]), currentProcess);
+    currentProcess = NULL;
+
+	scheduler();
 }
 
-void passUpOrDie(unsigned int passUpCode)
+void getSupportData() {
+    state_PTR oldState = (state_PTR) BIOSDATAPAGE;
+    oldState->s_v0 = (int) (currentProcess->p_supportStruct);    
+    oldState->s_pc += WORDLEN;
+    copyState(oldState, &(currentProcess->p_s));
+    loadNextState(currentProcess->p_s);
+    scheduler();
+}
+
+void passUpOrDie(int passUpCode)
 {
 	if ((currentProcess->p_supportStruct) != NULL) {
-        
 		state_PTR exceptStatePtr = (state_PTR) BIOSDATAPAGE;
-        copyState(&currentProcess->p_supportStruct->sup_exceptState[exceptionType], exceptionState);
+        copyState(exceptStatePtr, &currentProcess->p_supportStruct->sup_exceptState[passUpCode]);
 
 		LDCXT(currentProcess->p_supportStruct->sup_exceptContext[passUpCode].c_stackPtr, 
               currentProcess->p_supportStruct->sup_exceptContext[passUpCode].c_status, 

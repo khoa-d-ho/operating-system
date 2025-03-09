@@ -1,27 +1,27 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-/************************* INTERRUPTS.H *****************************
+/*********************Interrupts.h************************************
 *
-*  The externals declaration file for the interrupt handlers.
+*        This file declares the externals for interrupts.c
 *
-*  Written by Khoa Ho & Hieu Tran
 */
 
 #include "../h/types.h"
+#include "../h/const.h"
+#include "../h/types.h"
+#include "../h/pcb.h"
+#include "../h/asl.h"
+#include "../h/scheduler.h"
+#include "../h/initial.h"
+#include "../h/exceptions.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
-/* Main interrupt handler */
-extern void interruptHandler();
-
-/* Timer interrupt handlers */
-extern void pltInterruptHandler();
-extern void intervalTimerHandler();
-
-/* Device interrupt handlers */
-extern void deviceInterruptHandler(int line);
-extern void handleTerminal(int line, int dev, int isTransmit, unsigned int status);
-extern void handleDevice(int line, int dev, unsigned int status);
-
-/***************************************************************/
+extern void interruptHandler(state_PTR exceptionsState);
+extern void itInterrupt();
+extern void pltInterrupt();
+extern void nonTimerInterrupt(devregarea_t *devRegA, int lineNo);
+/*******************************************************************/
 
 #endif
+
