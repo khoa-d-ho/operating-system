@@ -260,7 +260,7 @@ pcb_PTR outChild(pcb_PTR p) {
 	pcb_PTR lastChild = NULL;
 
 	if(currChild == p) {
-		// If the process is the only child
+		/* If the process is the only child */ 
 		return removeChild(prnt);
 	}
 

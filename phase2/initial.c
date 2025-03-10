@@ -1,19 +1,20 @@
-#include "../h/initial.h"
-
 /****************************************************************************
  * initial.c
  *
- * This module initializes the nucleus of the operating system. 
- * 
- * This module ensures that the first process is created and added to the ready
- * queue. It also sets up the pass up vectors for TLB refill and exception
- * handling. The first process is set up with the test program as its code and
- * the nucleus stack as its stack. The scheduler is then called to start the
- * operating system. 
- * 
+ * This module initializes the nucleus of the operating system.
+ *
  * Written by Khoa Ho & Hieu Tran
  * February 2025
  ****************************************************************************/
+
+#include "../h/initial.h"
+
+int     processCount;            
+int     softBlockCount;                 
+pcb_PTR readyQueue;               
+pcb_PTR currentProcess;          
+int     deviceSemaphores[DEVICE_COUNT];  
+cpu_t   TOD_start;             
 
 void main() {
     /* Populate pass up vectors */

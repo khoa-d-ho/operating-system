@@ -72,7 +72,8 @@ void exceptionHandler() {
         interruptHandler(excState);  
     }
     else if (excCode <= TLBINVLDL) {
-        tlbExceptionHandler();  
+        tlbExceptionHandler(); 
+    } 
     else if (excCode == SYSCALL_EXCEPTION) {
         syscallHandler(excState);  
     }

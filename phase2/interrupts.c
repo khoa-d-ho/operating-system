@@ -213,7 +213,7 @@ void pltInterrupt() {
 	
 	if(currentProcess != mkEmptyProcQ()) {
 		/* If there is a current process, copy the state of the current process 
-		/* to the BIOS data page and insert it into the ready queue */
+			to the BIOS data page and insert it into the ready queue */
 		copyState((state_PTR)BIOSDATAPAGE, &(currentProcess->p_s));
 		currentProcess->p_time += (stopTod - TOD_start);
 		insertProcQ(&readyQueue, currentProcess);
