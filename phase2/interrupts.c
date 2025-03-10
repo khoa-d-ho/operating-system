@@ -238,12 +238,12 @@ void itInterrupt() {
 	LDIT(CLOCKINTERVAL);
 
 	/* Get the first process in the blocked queue */
-	pcb_PTR p = removeBlocked(&(deviceSemaphores[DEVICE_COUNT-1])); 
+	pcb_PTR p = removeBlocked(&(deviceSemaphores[CLOCK])); 
 	while (p != mkEmptyProcQ()) {
 		/* Unblock all pcbs blocked on the Pseudo-clock semaphore. */
 		insertProcQ(&readyQueue, p);
 		softBlockCount--;
-		p = removeBlocked(&(deviceSemaphores[DEVICE_COUNT-1]));
+		p = removeBlocked(&(deviceSemaphores[CLOCK]));
 	}
 	
 	/* Reset the Pseudo-clock semaphore to zero */
