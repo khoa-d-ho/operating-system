@@ -1,5 +1,10 @@
 #include "../h/exceptions.h"
 
+HIDDEN void storeState(state_PTR oldState) {
+    oldState->s_pc += WORDLEN;
+    copyState(oldState, &(currentProcess->p_s));
+}
+
 void exceptionHandler() {    
     state_t *excState = (state_t *) BIOSDATAPAGE;
     int excCode = CAUSE_GET_EXCCODE(excState->s_cause);
@@ -30,35 +35,27 @@ void syscallHandler() {
         case CREATEPROCESS: {
             createProcess(); 
         }
-            
         case TERMPROCESS: {
             terminateProcess(currentProcess);
-        }
-            
+        } 
         case PASSEREN: {
             passeren();
         }
-            
         case VERHOGEN: {
             verhogen(); 
         }
-            
         case WAITFORIO: {
             waitIO(); 
         }
-            
         case GETCPUTIME: {
             getCPUTime();
         }
-            
         case WAITFORCLOCK: {
             waitClock(); 
         }
-            
         case GETSUPPORT: {
             getSupportData();
         }
-            
         default: {			
             passUpOrDie(GENERALEXCEPT); 
         }
@@ -89,8 +86,7 @@ void createProcess() {
         insertChild(currentProcess, newProc);
         oldState->s_v0 = 0;
     }
-    oldState->s_pc += WORDLEN;
-    copyState(oldState, &(currentProcess->p_s));
+    storeState(oldState);
     loadNextState(currentProcess->p_s);
 }
 
@@ -138,8 +134,7 @@ void passeren() {
 
     (*semAddress)--;
 
-    oldState->s_pc += WORDLEN;
-    copyState(oldState, &(currentProcess->p_s));
+    storeState(oldState);
     if (*semAddress < 0) {
         insertBlocked(semAddress, currentProcess);
         currentProcess->p_time += (TOD_current - TOD_start);
@@ -161,8 +156,7 @@ void verhogen() {
             insertProcQ(&readyQueue, p);
         }
     }
-    oldState->s_pc += WORDLEN;
-    copyState(oldState, &(currentProcess->p_s));
+    storeState(oldState);
     loadNextState(currentProcess->p_s);
 }
 
@@ -189,8 +183,7 @@ void waitIO() {
 
     deviceSemaphores[semIndex]--;
     if(deviceSemaphores[semIndex] < 0) {
-        oldState->s_pc += WORDLEN;
-        copyState(oldState, &(currentProcess->p_s));
+        storeState(oldState);
         currentProcess->p_time += (TOD_stop - TOD_start);
         insertBlocked(&(deviceSemaphores[semIndex]), currentProcess);
         
@@ -207,9 +200,8 @@ void getCPUTime() {
     STCK(TOD_current);    
     state_PTR oldState = (state_PTR) BIOSDATAPAGE;
     oldState->s_v0 = currentProcess->p_time + TOD_current - TOD_start;
-    oldState->s_pc += WORDLEN;
 
-    copyState(oldState, &(currentProcess->p_s));
+    storeState(oldState);
     loadNextState(currentProcess->p_s);
 }
 
@@ -226,9 +218,8 @@ void waitClock() {
     }
 	
     softBlockCount++;
-    oldState->s_pc += WORDLEN;
+    storeState(oldState);
     currentProcess->p_time += (TOD_stop - TOD_start);
-    copyState(oldState, &(currentProcess->p_s));
     insertBlocked(&(deviceSemaphores[DEVICE_COUNT-1]), currentProcess);
     currentProcess = NULL;
 
@@ -238,8 +229,7 @@ void waitClock() {
 void getSupportData() {
     state_PTR oldState = (state_PTR) BIOSDATAPAGE;
     oldState->s_v0 = (int) (currentProcess->p_supportStruct);    
-    oldState->s_pc += WORDLEN;
-    copyState(oldState, &(currentProcess->p_s));
+    storeState(oldState);
     loadNextState(currentProcess->p_s);
     scheduler();
 }
@@ -267,4 +257,3 @@ void tlbExceptionHandler() {
 void programTrapHandler() {
 	passUpOrDie(GENERALEXCEPT);
 }
-

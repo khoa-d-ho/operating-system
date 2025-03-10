@@ -31,12 +31,12 @@ void scheduler() {
     }
     else {
         if(processCount == 0){
-            /* If no more processes */
+            /* If no more processes, halt */
             HALT();
         }
         
         else if(processCount > 0 && softBlockCount > 0) {
-            /* If blocked processes */
+            /* If blocked processes, set timer, status registers, and wait */
             setTIMER(XLVALUE);
             setSTATUS(ALLOFF | IECON | IMON | TEBITON);
             WAIT();
@@ -48,11 +48,33 @@ void scheduler() {
     }
 }
 
+/*****************************************************************************
+ * Function: loadNextState
+ * 
+ * This function loads the next state of the process to be scheduled. It
+ * uses the LDST instruction to load the state of the process.
+ * 
+ * Parameters:
+ *   state - The state of the process to be scheduled.
+ *
+ */
 void loadNextState(state_t state) {
     LDST(&state);
 }
 
+/*****************************************************************************
+ * Function: copyState
+ * 
+ * This function copies the state of a process from one state to another.
+ * It is used to save and restore the state of a process during context
+ * switching.
+ * 
+ * Parameters:
+ *   source - The source state to copy from.
+ *   dest - The destination state to copy to.
+ */
 void copyState(state_t *source, state_t *dest) {
+    /* Copy the state from source to dest */
     dest->s_entryHI = source->s_entryHI;
     dest->s_cause = source->s_cause;
     dest->s_status = source->s_status;
@@ -60,6 +82,7 @@ void copyState(state_t *source, state_t *dest) {
     
     int i;
     for (i = 0; i < STATEREGNUM; i++) {
+        /* Copy the registers */
         dest->s_reg[i] = source->s_reg[i];
     }
 }
