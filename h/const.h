@@ -215,5 +215,6 @@
 #define PROCESS_PRIO   1            /* Default process priority */
 #define SERTEINT       2            /* Serial transmit interrupt */
 #define SERTRINT       5            /* Serial receive interrupt */
+#define BITMASK_8      0xFF
 
 #endif
