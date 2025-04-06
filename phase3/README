@@ -1,0 +1,73 @@
+This folder contains the following Phase 3 (xxx.c) test programs:
+
+Most of the programs record their progress via terminal output (SYS12).
+It is a simple matter to modify any of these programs to write to the 
+printer (SYS11) instead.
+
+Furthermore, all but one terminate via a call to SYS9. One (timeOfDay)
+terminates by forcing a privileged instruction program trap.
+
+These files are compiled and correctly linked via the included Makefile.
+The Makefile also instantiates a flash device for each program (xxx.umps file)
+and loads the corresponding load image on the device.
+
+Hence xxx.c is a given test's source file, while xxx.umps is the corresponding
+flash device "file" loaded with xxx's load image.
+
+NOTE: All these test programs must include the libumps.h header file. Since its
+installation location varies depending on the uMPS3 method of installation (from
+a package manager or from source), these files include a local .h file (localLibumps.h)
+Simply edit this file for the correct location of libumps.h for your installation.
+
+The two most likely locations are:
+	For installation via a package manager
+		"/usr/include/umps3/umps/libumps.h"
+
+	For from source
+		"/usr/local/include/umps3/umps/libumps.h"
+	
+
+---
+
+Five different versions of a recursive Fibonacci Calculator;
+
+	Fib(7), Fib(8), Fib(9), Fib(10), Fib(11)
+
+---
+	
+Eight different versions of a Terminal tester:
+Each program write two lines of output to the terminal before terminating
+
+---
+
+printerTest is identical to a terminalTest only it writes one line of
+output to the terminal and same line of output to the printer.
+
+---
+
+asciiArt: In addition to printing instructions to the terminal,
+this program writes thousands of characters to the printer - an ascii
+art version of Steve McQuinn's face.
+
+---
+
+strConcat: A more complicated test of terminal input (SYS13) and terminal.
+
+---
+
+swapStress: This program exercises the pager by forcing the use of 10 different
+additional pages. Each page is written to and most likely forced out of RAM. 
+Each page is then accessed again to insure the written changes are still present.
+
+---
+
+terminalReader: A simpler test of terminal input (SYS13). 
+
+---
+
+timeOfDay: This program tests the Get TOD function (SYS10). Finally, this 
+program should terminate by issuing a low-level SYS call in user-mode: 
+a program trap exception.
+
+---
+
