@@ -116,7 +116,6 @@ HIDDEN int ackDeviceInterrupt(devregarea_t *devRegA, int devIndex) {
 HIDDEN void handleDevSemaphore(int devIndex, int statusCode) {
     pcb_PTR p;
     deviceSemaphores[devIndex]++;
-	
     if (deviceSemaphores[devIndex] <= 0) {
 		/* If there are blocked processes, remove the first one 
 			and insert it into the ready queue */

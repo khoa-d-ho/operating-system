@@ -146,6 +146,7 @@
 #define CAUSE	0x0000007C		/* Turn on the cause bits for exception handling */
 #define CLEARCAUSE 0xFFFFFF00
 #define XLVALUE 0xFFFFFFFF
+#define RICODE 0xFFFFFF28
 
 /* Memory Management Registers */
 #define ASIDMASK       0x00000FC0    /* ASID field mask */
