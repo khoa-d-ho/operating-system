@@ -218,4 +218,17 @@
 #define SERTRINT       5            /* Serial receive interrupt */
 #define BITMASK_8      0xFF
 
+
+#define POOLSIZE 16          
+#define FREEFRAME -1         /* unoccupied frame */
+#define MAXPAGES 32          /* max # pages per process */
+#define VPNSHIFT 12             /* shift value */
+#define VALIDON 0x00000200   /* valid bit */
+#define DIRTYON 0x00000400   /* dirty bit */
+#define VALIDOFF 0xFFFFFDFF     /* valid bit cleared mask */
+
+#define FLASHR 0x02          /* flash read */
+#define FLASHW 0x04          /* flash write */
+#define POOLBASEADDR 0x20020000     /* base address of swap pool */
+
 #endif
