@@ -3,13 +3,9 @@
 
 #include "../h/const.h"
 #include "../h/types.h"
-
-/* swap pool table structure */
-typedef struct {
-    int asid;                
-    int pageNo;             
-    pteEntry_t *ptePtr;      
-} swap_t;
+#include "../h/initProc.h"
+/* #include "../h/sysSupport.h" */
+#include "/usr/include/umps3/umps/libumps.h"
 
 /* static data */
 /* helper */
@@ -20,8 +16,7 @@ HIDDEN int nextVictim = 0;
 HIDDEN int pickVictim();     
 HIDDEN int flashIO(int operation, int devNo, int blockNo, int frameAddr);
 
-void initSwapStructs();
-void uTLB_RefillHandler();
-void tlbExceptionHandler();
+extern void initSwapStructs();
+extern void tlbExceptionHandler();
 
 #endif 

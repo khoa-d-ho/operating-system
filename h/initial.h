@@ -11,7 +11,6 @@
 #include "../h/exceptions.h"
 
 extern void test();
-extern void uTLB_RefillHandler();
 
 extern int processCount;            
 extern int softBlockCount;                 

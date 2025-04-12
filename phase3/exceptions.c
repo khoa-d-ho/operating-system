@@ -83,7 +83,7 @@ void exceptionHandler() {
 }
 
 /***************************************************************************
- * Function: interruptHandler
+ * Function: syscallHandler
  * System call handler - Processes SYSCALL exceptions.
  * Checks privilege level and dispatches to the appropriate
  * system call handler based on the system call code in a0.
@@ -389,9 +389,9 @@ void passUpOrDie(int passUpCode)
  * Handles TLB-related exceptions via the Pass Up or Die mechanism
  * with PGFAULTEXCEPT code.
  */
-void tlbExceptionHandler() {
-    passUpOrDie(PGFAULTEXCEPT);  /* Pass up with TLB exception code */
-}
+/* void tlbExceptionHandler() {
+    passUpOrDie(PGFAULTEXCEPT);  
+} */
 
 /***************************************************************************
  * Function: programTrapHandler
@@ -400,4 +400,25 @@ void tlbExceptionHandler() {
  */
 void programTrapHandler() {
     passUpOrDie(GENERALEXCEPT);  /* Pass up with general exception code */
+}
+
+/***************************************************************************
+ * Function: uTLB_RefillHandler
+ * Handles TLB refill exceptions by loading the missing page
+ * into the TLB and returning control to the process.
+ */
+void uTLB_RefillHandler() {
+    state_PTR exceptionState = (state_PTR) BIOSDATAPAGE;  
+    int vpn = (exceptionState->s_entryHI & VPNMASK) >> VPNSHIFT;  /* Extract VPN */
+    vpn %= MAXPAGES;  /* Normalize VPN */
+
+    /* Get page table entry from current process */
+    support_t *supportPtr = currentProcess->p_supportStruct;
+
+    setENTRYHI(supportPtr->sup_pageTable[vpn].entryHI);  /* Set entry HI */
+    setENTRYLO(supportPtr->sup_pageTable[vpn].entryLO);  /* Set entry LO */
+
+    TLBWR();  /* Write to TLB */
+
+    LDST(exceptionState);  /* Return control to the process */
 }

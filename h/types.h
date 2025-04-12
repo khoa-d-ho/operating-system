@@ -67,6 +67,18 @@ typedef struct state_t {
 
 } state_t, *state_PTR;
 
+/* page table entry type */
+typedef struct ptEntry_t {
+	unsigned int entryHI;		/* virtual page number */
+	unsigned int entryLO;		/* frame number and control bits */
+} ptEntry_t, *ptEntry_PTR;
+
+typedef struct swap_t {
+	unsigned int swap_asid;		/* process id */
+	unsigned int swap_pageNo;	/* page number */
+	ptEntry_t *swap_ptePtr;		/* pointer to page table entry */
+} swap_t, *swap_PTR;
+
 /* process context */
 typedef struct context_t {
 	/* process context fields */
@@ -79,6 +91,9 @@ typedef struct support_t {
 	int 		sup_asid;				/* Process Id (asid) */
 	state_t		sup_exceptState[2];		/* stored excpt states */
 	context_t	sup_exceptContext[2]; 	/* pass up contexts */
+	ptEntry_t	sup_pageTable[MAXPAGES]; /* private page table */
+	int 		sup_stackTLB[500];		/* stack for TLB refill */
+	int 		sup_stackGenExc[500];	/* stack for general exceptions */
 	/*... other fields to be added later*/
 } support_t;
 

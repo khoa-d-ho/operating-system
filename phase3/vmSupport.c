@@ -1,9 +1,4 @@
-#include "../h/const.h"
-#include "../h/types.h"
-#include "../h/initProc.h"
-#include "../h/sysSupport.h"
 #include "../h/vmSupport.h"
-#include "/usr/include/umps3/umps/libumps.h"
 
 
 void initSwapStructs() {
@@ -16,25 +11,6 @@ void initSwapStructs() {
     for (i = 0; i < POOLSIZE; i++) {
         swapPool[i].asid = FREEFRAME;
     }
-}
-
-void uTLB_RefillHandler() {
-    state_PTR exceptionState = (state_PTR) BIOSDATAPAGE;
-    
-    /* extract page number*/
-    int vpn = (exceptionState->s_entryHI & VPNMASK) >> VPNSHIFT;
-    vpn %= MAXPAGES;
-    
-    /* get page table entry from current process */
-    support_t *supportPtr = currentProc->p_supportStruct;
-    pteEntry_t *pte = &(supportPtr->sup_privatePgTbl[vpn]);
-    
-    /* load entry into TLB */
-    setENTRYHI(pte->entryHI);
-    setENTRYLO(pte->entryLO);
-    TLBWR();
-    
-    LDST(exceptionState);
 }
 
 /*****************************************************************************

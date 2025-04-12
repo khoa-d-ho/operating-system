@@ -15,9 +15,10 @@
 void exceptionHandler();
 
 /* Specific Exception Handlers */
-void syscallHandler();
-void tlbExceptionHandler();
-void programTrapHandler();
+extern void syscallHandler();
+extern void tlbExceptionHandler();
+extern void programTrapHandler();
+extern void uTLB_RefillHandler();
 
 /* System Calls */
 void createProcess();
