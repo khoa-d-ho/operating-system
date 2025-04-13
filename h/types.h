@@ -91,9 +91,9 @@ typedef struct support_t {
 	int 		sup_asid;				/* Process Id (asid) */
 	state_t		sup_exceptState[2];		/* stored excpt states */
 	context_t	sup_exceptContext[2]; 	/* pass up contexts */
-	ptEntry_t	sup_pageTable[MAXPAGES]; /* private page table */
+	ptEntry_t	sup_privatePgTbl[MAXPAGES]; /* private page table */
 	int 		sup_stackTLB[500];		/* stack for TLB refill */
-	int 		sup_stackGenExc[500];	/* stack for general exceptions */
+	int 		sup_stackGen[500];	/* stack for general exceptions */
 	/*... other fields to be added later*/
 } support_t;
 

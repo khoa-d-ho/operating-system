@@ -15,6 +15,8 @@ HIDDEN int nextVictim = 0;
 
 HIDDEN int pickVictim();     
 HIDDEN int flashIO(int operation, int devNo, int blockNo, int frameAddr);
+HIDDEN void toggleInterrupts(int enable);
+HIDDEN void mutex(int state, int *semAddress);
 
 extern void initSwapStructs();
 extern void tlbExceptionHandler();

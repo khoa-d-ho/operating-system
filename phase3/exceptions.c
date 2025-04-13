@@ -415,8 +415,8 @@ void uTLB_RefillHandler() {
     /* Get page table entry from current process */
     support_t *supportPtr = currentProcess->p_supportStruct;
 
-    setENTRYHI(supportPtr->sup_pageTable[vpn].entryHI);  /* Set entry HI */
-    setENTRYLO(supportPtr->sup_pageTable[vpn].entryLO);  /* Set entry LO */
+    setENTRYHI(supportPtr->sup_privatePgTbl[vpn].entryHI);  /* Set entry HI */
+    setENTRYLO(supportPtr->sup_privatePgTbl[vpn].entryLO);  /* Set entry LO */
 
     TLBWR();  /* Write to TLB */
 

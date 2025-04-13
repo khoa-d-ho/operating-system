@@ -78,6 +78,8 @@
 /* device common COMMAND codes */
 #define RESET			    0
 #define ACK				    1
+#define	READBLK				2
+#define	WRITEBLK			3
 
 /* Memory related constants */
 #define KSEG0           0x00000000
@@ -142,6 +144,7 @@
 #define IMON    0x0000FF00      /* Interrupt Masked */
 #define IEPON	0x00000004      /* Turn interrupts ON*/
 #define IECON	0x00000001      /* Turn interrupts current ON */
+#define	IECOFF	0xFFFFFFFE    /* Turn interrupts OFF */
 #define TEBITON	0x08000000		/* Timer enabled bit ON */
 #define CAUSE	0x0000007C		/* Turn on the cause bits for exception handling */
 #define CLEARCAUSE 0xFFFFFF00
@@ -213,13 +216,10 @@
 
 /* Miscellaneous */
 #define UPROCMAX       8            /* Maximum number of user processes */
-#define PROCESS_PRIO   1            /* Default process priority */
-#define SERTEINT       2            /* Serial transmit interrupt */
-#define SERTRINT       5            /* Serial receive interrupt */
 #define BITMASK_8      0xFF
+#define BITSHIFT_8     8
 
-
-#define POOLSIZE 16          
+#define POOLSIZE       2 * UPROCMAX  /* Size of swap pool */          
 #define FREEFRAME -1         /* unoccupied frame */
 #define MAXPAGES 32          /* max # pages per process */
 #define VPNSHIFT 12             /* shift value */
@@ -227,8 +227,6 @@
 #define DIRTYON 0x00000400   /* dirty bit */
 #define VALIDOFF 0xFFFFFDFF     /* valid bit cleared mask */
 
-#define FLASHR 0x02          /* flash read */
-#define FLASHW 0x04          /* flash write */
 #define POOLBASEADDR 0x20020000     /* base address of swap pool */
 
 #endif

@@ -1,6 +1,57 @@
 #include "../h/vmSupport.h"
 
 
+HIDDEN void toggleInterrupts(int enable) {
+    unsigned int status = getSTATUS();
+    
+    if (enable) {
+        setSTATUS(status | IECON);
+    } else {
+        setSTATUS(status & ~IECON);
+    }
+}
+HIDDEN void mutex(int state, int *semAddress) {
+    if (state == 1) {
+        SYSCALL(PASSEREN, (int) semAddress, 0, 0);
+    } else {
+        SYSCALL(VERHOGEN, (int) semAddress, 0, 0);
+    }
+}
+
+/* rr */
+HIDDEN int pickVictim() {
+    nextVictim = (nextVictim + 1) % POOLSIZE;
+    return nextVictim;
+}
+
+HIDDEN int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
+    int devIndex = ((FLASHINT - DISKINT) * DEVPERINT) + devNo;
+    
+    /* get device registers */
+    devregarea_t *devRegArea = (devregarea_t *) RAMBASEADDR;
+    
+    /* set data0 register to frame address */
+    devRegArea->devreg[devIndex].d_data0 = frameAddr;
+    
+    /* disable interrupts for atomic operations */
+    toggleInterrupts(FALSE);
+    
+    /* set command register with block number and operation */
+    devRegArea->devreg[devIndex].d_command = (blockNo << BITSHIFT_8) | operation;
+    
+    /* i/o wait  */
+    int status = SYSCALL(WAITFORIO, FLASHINT, devNo, 0);
+    
+    /* restore interrupts */
+    toggleInterrupts(TRUE);
+
+    return status;
+}
+
+/* HIDDEN void updateTLB(int victimIndex) {
+
+} */
+
 void initSwapStructs() {
     int i;
     
@@ -9,7 +60,7 @@ void initSwapStructs() {
     
     /* initialize swap pool table entries */
     for (i = 0; i < POOLSIZE; i++) {
-        swapPool[i].asid = FREEFRAME;
+        swapPool[i].swap_asid = FREEFRAME;
     }
 }
 
@@ -42,11 +93,10 @@ void tlbExceptionHandler() {
     /* if tlb modification exception, program trap */
     if (cause == TLBMOD) {
         programTrapHandler();
-        return;
     }
     
     /* get mutex over swap pool */
-    SYSCALL(PASSEREN, (int) &swapPoolSem, 0, 0);
+    mutex(1, (int *) &swapPoolSem);
     
     /* get missing page number */
     int missingPage = (supportPtr->sup_exceptState[PGFAULTEXCEPT].s_entryHI & VPNMASK) >> VPNSHIFT;
@@ -59,8 +109,7 @@ void tlbExceptionHandler() {
     /* check if victim frame occupied */
     if (swapPool[victimIndex].asid != FREEFRAME) {
         /* disable interrupts while updating page tables */
-        unsigned int status = getSTATUS();
-        setSTATUS(status & ~IECON);
+        toggleInterrupts(FALSE);
         
         /* mark page as invalid in owner's page table */
         swapPool[victimIndex].ptePtr->entryLO &= VALIDOFF;
@@ -69,45 +118,38 @@ void tlbExceptionHandler() {
         TLBCLR();
         
         /* reenble interrupts */
-        setSTATUS(status);
+        toggleInterrupts(TRUE);
         
         /* save victim page to backing store */
-        int victimAsid = swapPool[victimIndex].asid;
-        int victimPage = swapPool[victimIndex].pageNo;
-        
-        /* get flash dev no*/
+        int victimAsid = swapPool[victimIndex].swap_asid;
+        int victimPage = swapPool[victimIndex].swap_pageNo;
         int devNo = victimAsid - 1;
         
-        /* write victim page to flash */
-        int status = flashIO(FLASHW, devNo, victimPage, frameAddr);
+        int status = flashIO(WRITEBLK, devNo, victimPage, frameAddr);
         if (status != READY) {
             /* free mutex and terminate if flash operation fails */
-            SYSCALL(VERHOGEN, (int) &swapPoolSem, 0, 0);
+            mutex(0, (int *) &swapPoolSem);
             programTrapHandler();
-            return;
         }
     }
     
-    /*read requested page from backing store */
+    /* read requested page from backing store */
     int asid = supportPtr->sup_asid;
     int devNo = asid - 1;
-    int status = flashIO(FLASHR, devNo, missingPage, frameAddr);
+    int status = flashIO(READBLK, devNo, missingPage, frameAddr);
     
     if (status != READY) {
         /* free mutex and terminate if flash operation fails */
-        SYSCALL(VERHOGEN, (int) &swapPoolSem, 0, 0);
+        mutex(0, (int *) &swapPoolSem);
         programTrapHandler();
-        return;
     }
     
-    /* update page table and swap pool table*/
-    unsigned int savedStatus = getSTATUS();
-    setSTATUS(savedStatus & ~IECON);
-    
+    toggleInterrupts(FALSE);
+
     /* update swap pool entry */
-    swapPool[victimIndex].asid = asid;
-    swapPool[victimIndex].pageNo = missingPage;
-    swapPool[victimIndex].ptePtr = &(supportPtr->sup_privatePgTbl[missingPage]);
+    swapPool[victimIndex].swap_asid = asid;
+    swapPool[victimIndex].swap_pageNo = missingPage;
+    swapPool[victimIndex].swap_ptePtr = &(supportPtr->sup_privatePgTbl[missingPage]);
     
     /*update page table entry, mark as valid and dirty */
     supportPtr->sup_privatePgTbl[missingPage].entryLO = frameAddr | VALIDON | DIRTYON;
@@ -115,42 +157,13 @@ void tlbExceptionHandler() {
     TLBCLR();
 
     /* restore interrupt status */
-    setSTATUS(savedStatus);
-    
+    toggleInterrupts(TRUE);
+
     /* release mutex */
-    SYSCALL(VERHOGEN, (int) &swapPoolSem, 0, 0);
-    
+    mutex(0, (int *) &swapPoolSem);
+
     /* return to the exception state to retry instruction */
     LDST(&(supportPtr->sup_exceptState[PGFAULTEXCEPT]));
 }
 
-/* rr */
-int pickVictim() {
-    nextVictim = (nextVictim + 1) % POOLSIZE;
-    return nextVictim;
-}
 
-int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
-    int devIndex = ((FLASHINT - DISKINT) * DEVPERINT) + devNo;
-    
-    /* get device registers */
-    devregarea_t *devRegArea = (devregarea_t *) RAMBASEADDR;
-    
-    /* set data0 register to frame address */
-    devRegArea->devreg[devIndex].d_data0 = frameAddr;
-    
-    /* disable interrupts for atomic operations */
-    unsigned int savedStatus = getSTATUS();
-    setSTATUS(savedStatus & ~IECON);
-    
-    /* set command register with block number and operation */
-    devRegArea->devreg[devIndex].d_command = (blockNo << 8) | operation;
-    
-    /* i/o wait  */
-    int status = SYSCALL(WAITFORIO, FLASHINT, devNo, 0);
-    
-    /* restore interrupts */
-    setSTATUS(savedStatus);
-    
-    return status;
-}
