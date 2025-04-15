@@ -398,9 +398,9 @@ void passUpOrDie(int passUpCode)
  * Handles program trap exceptions via the Pass Up or Die mechanism
  * with GENERALEXCEPT code.
  */
-void programTrapHandler() {
-    passUpOrDie(GENERALEXCEPT);  /* Pass up with general exception code */
-}
+/* void programTrapHandler() {
+    passUpOrDie(GENERALEXCEPT);
+} */
 
 /***************************************************************************
  * Function: uTLB_RefillHandler

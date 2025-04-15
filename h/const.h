@@ -11,7 +11,7 @@
 #define PAGESIZE		  4096			/* page size in bytes	*/
 #define WORDLEN			  4				/* word size in bytes	*/
 #define MAXPROC			  20			/* max number of processes */
-
+#define MAXSTRLEN		  128			/* max string length	*/
 
 /* timer, timescale, TOD-LO and other bus regs */
 #define RAMBASEADDR		0x10000000
@@ -105,6 +105,7 @@
 
 /* Macro to read the TOD clock */
 #define STCK(T) ((T) = ((* ((cpu_t *) TODLOADDR)) / (* ((cpu_t *) TIMESCALEADDR))))
+#define RAMTOP(T) ((T) = ((* ((int *) RAMBASEADDR)) + (* ((int *) RAMBASESIZE))))
 
 /* Timing constants */
 #define QUANTUM         5000      /* 5ms in microseconds */
@@ -129,6 +130,11 @@
 #define NETWORK 5
 #define PRINTER 6
 #define TERMINAL 7
+#define TERMINATE 9
+#define GETTOD 10
+#define WRITEPRINTER 11
+#define WRITETERMINAL 12
+#define READTERMINAL 13
 
 /* Device Constants */
 #define DEVICE_COUNT        49
@@ -150,6 +156,8 @@
 #define CLEARCAUSE 0xFFFFFF00
 #define XLVALUE 0xFFFFFFFF
 #define RICODE 0xFFFFFF28
+#define TEXTAREAADDR 0x800000B0
+#define STACKPAGEADDR 0xC0000000
 
 /* Memory Management Registers */
 #define ASIDMASK       0x00000FC0    /* ASID field mask */
@@ -218,6 +226,10 @@
 #define UPROCMAX       8            /* Maximum number of user processes */
 #define BITMASK_8      0xFF
 #define BITSHIFT_8     8
+#define PRINTCHR    2
+#define CHAR_TRANSMITTED 5
+#define CHAR_RECEIVED 5
+#define STATUS_MASK 0x000000FF
 
 #define POOLSIZE       2 * UPROCMAX  /* Size of swap pool */          
 #define FREEFRAME -1         /* unoccupied frame */
@@ -226,6 +238,9 @@
 #define VALIDON 0x00000200   /* valid bit */
 #define DIRTYON 0x00000400   /* dirty bit */
 #define VALIDOFF 0xFFFFFDFF     /* valid bit cleared mask */
+#define ASIDSHIFT 6          /* shift value for ASID */
+#define UPROCSTART 0x80000
+#define PAGESTACK 0XBFFFF
 
 #define POOLBASEADDR 0x20020000     /* base address of swap pool */
 

@@ -1,7 +1,10 @@
 #include "../h/vmSupport.h"
 
+swap_t swapPool[POOLSIZE];
+int swapPoolSem;      
+int nextVictim = 0;   
 
-HIDDEN void toggleInterrupts(int enable) {
+void toggleInterrupts(int enable) {
     unsigned int status = getSTATUS();
     
     if (enable) {
@@ -10,21 +13,14 @@ HIDDEN void toggleInterrupts(int enable) {
         setSTATUS(status & ~IECON);
     }
 }
-HIDDEN void mutex(int state, int *semAddress) {
-    if (state == 1) {
-        SYSCALL(PASSEREN, (int) semAddress, 0, 0);
-    } else {
-        SYSCALL(VERHOGEN, (int) semAddress, 0, 0);
-    }
-}
 
 /* rr */
-HIDDEN int pickVictim() {
+int pickVictim() {
     nextVictim = (nextVictim + 1) % POOLSIZE;
     return nextVictim;
 }
 
-HIDDEN int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
+int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
     int devIndex = ((FLASHINT - DISKINT) * DEVPERINT) + devNo;
     
     /* get device registers */
@@ -51,6 +47,14 @@ HIDDEN int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
 /* HIDDEN void updateTLB(int victimIndex) {
 
 } */
+
+void mutex(int state, int *semAddress) {
+    if (state == 1) {
+        SYSCALL(PASSEREN, (int) semAddress, 0, 0);
+    } else {
+        SYSCALL(VERHOGEN, (int) semAddress, 0, 0);
+    }
+}
 
 void initSwapStructs() {
     int i;
@@ -107,12 +111,12 @@ void tlbExceptionHandler() {
     int frameAddr = POOLBASEADDR + (victimIndex * PAGESIZE);
     
     /* check if victim frame occupied */
-    if (swapPool[victimIndex].asid != FREEFRAME) {
+    if (swapPool[victimIndex].swap_asid != FREEFRAME) {
         /* disable interrupts while updating page tables */
         toggleInterrupts(FALSE);
         
         /* mark page as invalid in owner's page table */
-        swapPool[victimIndex].ptePtr->entryLO &= VALIDOFF;
+        swapPool[victimIndex].swap_ptePtr->entryLO &= VALIDOFF;
         
         /* clear tlb to force reload of updated entries */
         TLBCLR();
@@ -144,12 +148,12 @@ void tlbExceptionHandler() {
         programTrapHandler();
     }
     
-    toggleInterrupts(FALSE);
-
     /* update swap pool entry */
     swapPool[victimIndex].swap_asid = asid;
     swapPool[victimIndex].swap_pageNo = missingPage;
     swapPool[victimIndex].swap_ptePtr = &(supportPtr->sup_privatePgTbl[missingPage]);
+
+    toggleInterrupts(FALSE);
     
     /*update page table entry, mark as valid and dirty */
     supportPtr->sup_privatePgTbl[missingPage].entryLO = frameAddr | VALIDON | DIRTYON;

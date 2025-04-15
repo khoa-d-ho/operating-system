@@ -1,7 +1,7 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-/*********************Interrupts.h************************************
+/********************* INTERRUPTS.H ************************************
 *
 *        This file declares the externals for interrupts.c
 *

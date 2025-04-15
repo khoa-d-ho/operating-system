@@ -2,6 +2,12 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
+/********************* EXCEPTIONS.H ************************************
+*
+*        This file declares the externals for exceptions.c
+*
+*/
+
 #include "../h/const.h"
 #include "../h/types.h"
 #include "../h/pcb.h"
