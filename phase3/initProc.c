@@ -38,16 +38,16 @@ void createUProc(int id) {
     newState.s_entryHI = id << ASIDSHIFT;
     newState.s_pc = newState.s_t9 = (memaddr) TEXTAREAADDR;
     newState.s_sp = (memaddr) STACKPAGEADDR;
-    newState.s_status = ALLOFF | TEBITON | IMON | IECON | UMON;
+    newState.s_status = ALLOFF | TEBITON | IMON | IEPON | UMON;
 
     supStructs[id].sup_asid = id;
     supStructs[id].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supGeneralExceptionHandler;
     supStructs[id].sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) &(supStructs[id].sup_stackGen[499]);
-    supStructs[id].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IECON | IMON | TEBITON;
+    supStructs[id].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IEPON | IMON | TEBITON;
         
     supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) supTlbExceptionHandler;
     supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = (int) &(supStructs[id].sup_stackTLB[499]);
-    supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IECON | IMON | TEBITON;
+    supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IEPON | IMON | TEBITON;
     int pg;
     for(pg = 0; pg < MAXPAGES; pg++) {
         supStructs[id].sup_privatePgTbl[pg].entryHI = ALLOFF | ((UPROCSTART + pg) << VPNSHIFT) | (id << ASIDSHIFT);
