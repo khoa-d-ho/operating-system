@@ -11,7 +11,7 @@ void supGeneralExceptionHandler() {
     if (cause == SYSCALL_EXCEPTION) {
         supSyscallHandler(supportPtr);
     } else {
-        programTrapHandler();
+        supProgramTrapHandler();
     }
 }
 
@@ -19,6 +19,9 @@ void supSyscallHandler(support_t *supportPtr) {
     state_t *excState = &(supportPtr->sup_exceptState[GENERALEXCEPT]);
 
     int asid = supportPtr->sup_asid;
+
+    /* increment pc to next instruction */
+    excState->s_pc += WORDLEN;
 
     /* get syscall code */
     int syscallCode = excState->s_a0;
@@ -45,19 +48,16 @@ void supSyscallHandler(support_t *supportPtr) {
             break;
         }
         default: {			
-            programTrapHandler();  /* Unknown syscall - terminate process */
+            supProgramTrapHandler();  /* Unknown syscall - terminate process */
         }
     }
-
-    /* increment pc to next instruction */
-    excState->s_pc += WORDLEN;
     
     /* load state from support struct */
     LDST(excState); 
 }
         
 
-void programTrapHandler() {
+void supProgramTrapHandler() {
     terminateUProc(NULL);
 }
 
@@ -67,7 +67,7 @@ void terminateUProc(int* sem) {
 
     /* clear swap pool entry */
     int i = 0;
-    for (i = 0; i <= POOLSIZE; i++) {
+    for (i = 0; i < POOLSIZE; i++) {
         if (swapPool[i].swap_asid == asid) {
             swapPool[i].swap_asid = FREEFRAME;
         }
@@ -102,7 +102,7 @@ void writeToPrinter(state_t *excState, int asid) {
     int length = excState->s_a2;
 
     if ((int) virtAddr < KUSEG || length < 0 || length > MAXSTRLEN) {
-        programTrapHandler();
+        supProgramTrapHandler();
     }
 
     /* get device register address */
@@ -154,7 +154,7 @@ void writeToTerminal(state_t *excState, int asid) {
     int length = excState->s_a2;
 
     if ((int) virtAddr < KUSEG || length < 0 || length > MAXSTRLEN) {
-        programTrapHandler();
+        supProgramTrapHandler();
     }
 
     devregarea_t *devrega = (devregarea_t *) RAMBASEADDR;
@@ -198,7 +198,7 @@ void readFromTerminal(state_t *excState, int asid) {
     char *virtAddr = (char *) excState->s_a1;
 
     if ((int) virtAddr < KUSEG) {
-        programTrapHandler();
+        supProgramTrapHandler();
     }
 
     devregarea_t *devrega = (devregarea_t *) RAMBASEADDR;
@@ -206,7 +206,7 @@ void readFromTerminal(state_t *excState, int asid) {
     int termSem = ((TERMINT - DISKINT) * DEVPERINT) + termNo;
 
     /* get mutex for terminal device */
-    mutex(1, (int *) &devSemaphore[termSem + DEVPERINT]);
+    mutex(1, (int *) &devSemaphore[termSem]);
 
     int error = 0;
     int status, statusCode;

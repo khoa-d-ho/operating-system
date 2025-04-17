@@ -10,7 +10,7 @@
 /* Exception Handlers */
 extern void supGeneralExceptionHandler();
 extern void supSyscallHandler(support_t *supportPtr);
-extern void programTrapHandler();
+extern void supProgramTrapHandler();
 
 /* System Calls*/
 void terminateUProc(int* sem);

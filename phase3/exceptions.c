@@ -94,7 +94,7 @@ void syscallHandler() {
     
     /* Check if in user mode and attempting privileged syscalls */
     if (currentProcess->p_s.s_status & KUPON && syscallCode <= 8) {
-        excState->s_cause = (excState->s_cause) & RICODE; /* set cause.ExcCode bits to RI */
+        excState->s_cause = (excState->s_cause & RICODE); /* set cause.ExcCode bits to RI */
         programTrapHandler(); 
     }
     
@@ -389,18 +389,18 @@ void passUpOrDie(int passUpCode)
  * Handles TLB-related exceptions via the Pass Up or Die mechanism
  * with PGFAULTEXCEPT code.
  */
-/* void tlbExceptionHandler() {
+void tlbExceptionHandler() {
     passUpOrDie(PGFAULTEXCEPT);  
-} */
+}
 
 /***************************************************************************
  * Function: programTrapHandler
  * Handles program trap exceptions via the Pass Up or Die mechanism
  * with GENERALEXCEPT code.
  */
-/* void programTrapHandler() {
+void programTrapHandler() {
     passUpOrDie(GENERALEXCEPT);
-} */
+}
 
 /***************************************************************************
  * Function: uTLB_RefillHandler

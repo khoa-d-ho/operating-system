@@ -25,21 +25,17 @@ int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
     
     /* get device registers */
     devregarea_t *devRegArea = (devregarea_t *) RAMBASEADDR;
-    
-    /* set data0 register to frame address */
+
     devRegArea->devreg[devIndex].d_data0 = frameAddr;
-    
-    /* disable interrupts for atomic operations */
     toggleInterrupts(FALSE);
-    
-    /* set command register with block number and operation */
     devRegArea->devreg[devIndex].d_command = (blockNo << BITSHIFT_8) | operation;
-    
-    /* i/o wait  */
     int status = SYSCALL(WAITFORIO, FLASHINT, devNo, 0);
-    
-    /* restore interrupts */
     toggleInterrupts(TRUE);
+
+    if (status != READY) {
+        /* handle error */
+        status = -status;
+    }
 
     return status;
 }
@@ -89,26 +85,25 @@ void initSwapStructs() {
  * 13. release mutex (v)
  * 14. return control to retry faulting instruction
  *****************************************************************************/
-void tlbExceptionHandler() {
+void supTlbExceptionHandler() {
     support_t *supportPtr = (support_t *) SYSCALL(GETSUPPORT, 0, 0, 0);
     
     int cause = (supportPtr->sup_exceptState[PGFAULTEXCEPT].s_cause & CAUSE_EXCCODE_MASK) >> CAUSE_EXCCODE_SHIFT;
     
     /* if tlb modification exception, program trap */
     if (cause == TLBMOD) {
-        programTrapHandler();
+        supProgramTrapHandler();
     }
-    
+
     /* get mutex over swap pool */
     mutex(1, (int *) &swapPoolSem);
-    
+
     /* get missing page number */
     int missingPage = (supportPtr->sup_exceptState[PGFAULTEXCEPT].s_entryHI & VPNMASK) >> VPNSHIFT;
     missingPage %= MAXPAGES;
     
     /* select victim frame using round-robin */
     int victimIndex = pickVictim();
-    int frameAddr = POOLBASEADDR + (victimIndex * PAGESIZE);
     
     /* check if victim frame occupied */
     if (swapPool[victimIndex].swap_asid != FREEFRAME) {
@@ -116,7 +111,7 @@ void tlbExceptionHandler() {
         toggleInterrupts(FALSE);
         
         /* mark page as invalid in owner's page table */
-        swapPool[victimIndex].swap_ptePtr->entryLO &= VALIDOFF;
+        swapPool[victimIndex].swap_ptePtr->entryLO = swapPool[victimIndex].swap_ptePtr->entryLO & VALIDOFF;
         
         /* clear tlb to force reload of updated entries */
         TLBCLR();
@@ -128,24 +123,26 @@ void tlbExceptionHandler() {
         int victimAsid = swapPool[victimIndex].swap_asid;
         int victimPage = swapPool[victimIndex].swap_pageNo;
         int devNo = victimAsid - 1;
-        
+        int frameAddr = POOLBASEADDR + (victimIndex * PAGESIZE);
+
         int status = flashIO(WRITEBLK, devNo, victimPage, frameAddr);
         if (status != READY) {
             /* free mutex and terminate if flash operation fails */
             mutex(0, (int *) &swapPoolSem);
-            programTrapHandler();
+            supProgramTrapHandler();
         }
     }
     
     /* read requested page from backing store */
     int asid = supportPtr->sup_asid;
     int devNo = asid - 1;
+    int frameAddr = POOLBASEADDR + (missingPage * PAGESIZE);
     int status = flashIO(READBLK, devNo, missingPage, frameAddr);
     
     if (status != READY) {
         /* free mutex and terminate if flash operation fails */
         mutex(0, (int *) &swapPoolSem);
-        programTrapHandler();
+        supProgramTrapHandler();
     }
     
     /* update swap pool entry */

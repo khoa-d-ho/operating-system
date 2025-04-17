@@ -7,62 +7,57 @@
 #include "../h/initProc.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
-int p3devSemaphore[DEVICE_COUNT]; 
-int masterSemaphore; /* graceful */
+int devSemaphore[DEVICE_COUNT]; 
+int masterSemaphore; 
+HIDDEN void createUProc(int id);
+static support_t supStructs[UPROCMAX+1];
 
 void test() {
-    static support_t supportStruct[UPROCMAX + 1]; 
-    state_t u_procState;   
-    int i, j, pid, res;
+	int i;
+	for(i = 0; i < (DEVICE_COUNT-1); i++) {
+		devSemaphore[i] = 1;
+	}	
 
-    masterSemaphore = 0;    
-    initSwapStructs(); /* swap pool table and sema4 */
-    
-    for(j = 0; j < DEVICE_COUNT; j++) {
-        p3devSemaphore[j] = 1;
-    }
+	initSwapStructs();
 
-    u_procState.s_pc = (memaddr) TEXTAREASTART;
-    u_procState.s_t9 = (memaddr) TEXTAREASTART;
-    u_procState.s_status = ALLOFF | PANDOS_IEPBITON | TEBITON | USERPON;
-    u_procState.s_sp = (memaddr) STCKTOPEND;
+	int id;
+	for(id = 1; id <= UPROCMAX; id++) {
+		createUProc(id);
+	}
     
-    for(pid = 1; pid <= UPROCMAX; pid++) {
-        supportStruct[pid].sup_asid = pid;
-        u_procState.s_entryHI = (pid << ASIDSHIFT);
+	masterSemaphore = 0;
+	for(i = 0; i < UPROCMAX; i++) {
+		SYSCALL(PASSEREN, (int) &masterSemaphore, 0, 0);
+	}
+	SYSCALL(TERMPROCESS, 0, 0, 0);
+
+} 
+
+void createUProc(int id) {
+    state_t newState;
+    newState.s_entryHI = id << ASIDSHIFT;
+    newState.s_pc = newState.s_t9 = (memaddr) TEXTAREAADDR;
+    newState.s_sp = (memaddr) STACKPAGEADDR;
+    newState.s_status = ALLOFF | TEBITON | IMON | IECON | UMON;
+
+    supStructs[id].sup_asid = id;
+    supStructs[id].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supGeneralExceptionHandler;
+    supStructs[id].sup_exceptContext[GENERALEXCEPT].c_stackPtr = (int) &(supStructs[id].sup_stackGen[499]);
+    supStructs[id].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | IECON | IMON | TEBITON;
         
-        /* context for tlb exception handler */
-        supportStruct[pid].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) tlbExceptionHandler;
-        supportStruct[pid].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackTLB[SUPSTCKTOP];
-        supportStruct[pid].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON;
+    supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_pc = (memaddr) supTlbExceptionHandler;
+    supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_stackPtr = (int) &(supStructs[id].sup_stackTLB[499]);
+    supStructs[id].sup_exceptContext[PGFAULTEXCEPT].c_status = ALLOFF | IECON | IMON | TEBITON;
+    int pg;
+    for(pg = 0; pg < MAXPAGES; pg++) {
+        supStructs[id].sup_privatePgTbl[pg].entryHI = ALLOFF | ((UPROCSTART + pg) << VPNSHIFT) | (id << ASIDSHIFT);
+        supStructs[id].sup_privatePgTbl[pg].entryLO = ALLOFF | DIRTYON;
+    }
+    supStructs[id].sup_privatePgTbl[MAXPAGES-1].entryHI = ALLOFF | (PAGESTACK << VPNSHIFT) | (id << ASIDSHIFT);
 
-        /* context for general exception handler */
-        supportStruct[pid].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supLvlGenExceptionHandler;
-        supportStruct[pid].sup_exceptContext[GENERALEXCEPT].c_stackPtr = (memaddr) &supportStruct[pid].sup_stackGen[SUPSTCKTOP];
-        supportStruct[pid].sup_exceptContext[GENERALEXCEPT].c_status = ALLOFF | PANDOS_IEPBITON | PANDOS_CAUSEINTMASK | TEBITON;
-
-        /* init page table entries */
-        for (i = 0; i < PGTBLSIZE; i++) {
-            supportStruct[pid].sup_privatePgTbl[i].entryHI = ALLOFF | ((KUSEG + i) << VPNSHIFT) | (pid << ASIDSHIFT);
-            supportStruct[pid].sup_privatePgTbl[i].entryLO = ALLOFF | (i << PFNSHIFT) | DIRTYON | VALIDOFF | GLOBALOFF;
-        }
-
-        /* stack page */
-        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryHI = ALLOFF | (pid << ASIDSHIFT) | (STCKPGVPN << VPNSHIFT);
-        supportStruct[pid].sup_privatePgTbl[PGTBLSIZE - 1].entryLO = ALLOFF | DIRTYON | VALIDOFF | GLOBALOFF;
- 
-        res = SYSCALL(CREATEPROCESS, (unsigned int) &u_procState, (unsigned int) &(supportStruct[pid]), 0);
+    int status = SYSCALL(CREATEPROCESS, (int) &newState, (int) &(supStructs[id]), 0);
         
-        /* if creation failed, terminate and release master semaphore (review here) */
-        if(res != OK) {
-            SYSCALL(TERMINATEPROCESS, 0, 0, 0);
-            SYSCALL(VERHOGEN, (unsigned int) &masterSemaphore, 0, 0);
-        }
+    if(status != 1) {
+        SYSCALL(TERMPROCESS, 0, 0, 0);
     }
-    
-    for(i = 0; i < UPROCMAX; i++) {
-        SYSCALL(PASSEREN, (unsigned int) &masterSemaphore, 0, 0);
-    }
-
-    SYSCALL(TERMINATEPROCESS, 0, 0, 0);
 }
