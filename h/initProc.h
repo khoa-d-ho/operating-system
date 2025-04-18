@@ -7,7 +7,7 @@
 #include "../h/vmSupport.h"
 #include "../h/initial.h"
 
-extern int devSemaphore[DEVICE_COUNT]; /* sema4 io */
+extern int devSemaphore[DEVICE_COUNT-1]; /* sema4 io */
 extern int masterSemaphore;      
 
 

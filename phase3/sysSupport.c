@@ -1,12 +1,82 @@
 #include "../h/sysSupport.h"
 
+void debug1 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug2 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug3 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug4 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug5 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug6 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug7 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug12 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+void debug13 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+void debug14 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+void debug15 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+void debug16 (int a, int b, int c, int d) {
+    int i;
+    i = 0;
+    i++;
+}
+
+
 void supGeneralExceptionHandler() {
     /* get support structure */
     support_t *supportPtr = (support_t*) SYSCALL(GETSUPPORT, 0, 0, 0);
 
     /* get exception type */
     int cause = (supportPtr->sup_exceptState[GENERALEXCEPT].s_cause & CAUSE_EXCCODE_MASK) >> CAUSE_EXCCODE_SHIFT;
-
+    
     /* check if exception is syscall */
     if (cause == SYSCALL_EXCEPTION) {
         supSyscallHandler(supportPtr);
@@ -25,35 +95,48 @@ void supSyscallHandler(support_t *supportPtr) {
 
     /* get syscall code */
     int syscallCode = excState->s_a0;
-
     switch (syscallCode) {
         case TERMINATE: {
+            debug12(0, 0, 0, 0);
             terminateUProc(NULL);  /* SYS9 */
+            debug1(0, 0, 0, 0);
             break;
         }
         case GETTOD: {
+            debug13(0, 0, 0, 0);
             getTod(excState);  /* SYS10 */
+            debug2(0, 0, 0, 0);
             break;
         }
         case WRITEPRINTER: {
+            debug14(0, 0, 0, 0);
+
             writeToPrinter(excState, asid);  /* SYS11 */
+            debug3(0, 0, 0, 0);
             break;
         }
         case WRITETERMINAL: {
+            debug15(0, 0, 0, 0);
+
             writeToTerminal(excState, asid);  /* SYS12 */
+            debug4(0, 0, 0, 0);
             break;
         }
         case READTERMINAL: {
+            debug16(0, 0, 0, 0);
+
             readFromTerminal(excState, asid);  /* SYS13 */
+            debug5(0, 0, 0, 0);
             break;
         }
-        default: {			
+        default: {
+            debug7(0, 0, 0, 0);		
             supProgramTrapHandler();  /* Unknown syscall - terminate process */
+            debug6(0, 0, 0, 0);
         }
     }
-    
     /* load state from support struct */
-    LDST(excState); 
+/*     LDST(excState);  */
 }
         
 
@@ -61,6 +144,7 @@ void supProgramTrapHandler() {
     terminateUProc(NULL);
 }
 
+/*sys9*/
 void terminateUProc(int* sem) {
     /* get asid of current process */
     int asid = currentProcess->p_supportStruct->sup_asid;
@@ -85,6 +169,7 @@ void terminateUProc(int* sem) {
     SYSCALL(TERMPROCESS, 0, 0, 0);
 }
 
+/*sys10*/
 void getTod(state_t *excState) {
     /* get current time */
     cpu_t tod;
@@ -92,8 +177,10 @@ void getTod(state_t *excState) {
 
     /* store time in v0 register */
     excState->s_v0 = tod;
+    LDST(excState);
 }
 
+/*sys11*/
 void writeToPrinter(state_t *excState, int asid) {
     /* get virtual address of first char of transmitted string */
     char *virtAddr = (char *) excState->s_a1;
@@ -109,7 +196,7 @@ void writeToPrinter(state_t *excState, int asid) {
     devregarea_t *devrega = (devregarea_t *) RAMBASEADDR;
 
     /* get printer device number */
-    int printNo = asid - 1; /*asid starts from 1*/ 
+    int printNo = asid - 1; /*asid maps to devnum, starts from 1*/ 
     
     /* get printer device semaphore */
     int printSem = ((PRNTINT - DISKINT) * DEVPERINT) + printNo;
@@ -136,10 +223,6 @@ void writeToPrinter(state_t *excState, int asid) {
             error = 1;
         }
     }
-
-    /* release mutex */
-    mutex(0, (int *) &devSemaphore[printSem]);
-
     if (!error) {
         /* save number of chars transmitted in v0 register */
         excState->s_v0 = i;
@@ -147,6 +230,9 @@ void writeToPrinter(state_t *excState, int asid) {
         /* save negative of device's status code in v0 register */
         excState->s_v0 = -statusCode;
     }
+    /* release mutex */
+    mutex(0, (int *) &devSemaphore[printSem]);
+    LDST(excState);
 }
 
 void writeToTerminal(state_t *excState, int asid) {
@@ -162,7 +248,7 @@ void writeToTerminal(state_t *excState, int asid) {
     int termSem = ((TERMINT - DISKINT) * DEVPERINT) + termNo;
 
     /* get mutex for terminal device */
-    mutex(1, (int *) &devSemaphore[termSem]);
+    mutex(1, (int *) &devSemaphore[termSem + DEVPERINT]);
 
     int error = 0;
     int status, statusCode;
@@ -182,8 +268,6 @@ void writeToTerminal(state_t *excState, int asid) {
             error = 1;
         }
     }
-    /* release mutex */
-    mutex(0, (int *) &devSemaphore[termSem]);
 
     if (!error) {
         /* save number of chars transmitted in v0 register */
@@ -192,6 +276,9 @@ void writeToTerminal(state_t *excState, int asid) {
         /* save negative of device's status code in v0 register */
         excState->s_v0 = -statusCode;
     }
+    /* release mutex */
+    mutex(0, (int *) &devSemaphore[termSem]);
+    LDST(excState);
 }
 
 void readFromTerminal(state_t *excState, int asid) {
@@ -220,7 +307,7 @@ void readFromTerminal(state_t *excState, int asid) {
 
         statusCode = status & STATUS_MASK;
         if (statusCode == CHAR_RECEIVED) {
-            *virtAddr = status >> BITSHIFT_8;
+            *virtAddr = (status >> BITSHIFT_8) & BITMASK_8; /* Extract the character from the status (upper half) */
             virtAddr++;
             i++;
 
@@ -242,6 +329,7 @@ void readFromTerminal(state_t *excState, int asid) {
         /* save negative of device's status code in v0 register */
         excState->s_v0 = -statusCode;
     }
+    LDST(excState);
 }
 
 

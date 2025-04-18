@@ -75,7 +75,7 @@ void exceptionHandler() {
         tlbExceptionHandler(); 
     } 
     else if (excCode == SYSCALL_EXCEPTION) {
-        syscallHandler(excState);  
+        syscallHandler();  
     }
     else {
         passUpOrDie(GENERALEXCEPT);  /* Handle other exceptions (program traps) */
@@ -83,7 +83,7 @@ void exceptionHandler() {
 }
 
 /***************************************************************************
- * Function: syscallHandler
+ * Function: interruptHandler
  * System call handler - Processes SYSCALL exceptions.
  * Checks privilege level and dispatches to the appropriate
  * system call handler based on the system call code in a0.
@@ -93,9 +93,13 @@ void syscallHandler() {
     int syscallCode = excState->s_a0;  /* Extract syscall code from a0 */
     
     /* Check if in user mode and attempting privileged syscalls */
-    if (currentProcess->p_s.s_status & KUPON && syscallCode <= 8) {
+    if ((excState->s_status & KUPON) != ALLOFF) {
         excState->s_cause = (excState->s_cause & RICODE); /* set cause.ExcCode bits to RI */
         programTrapHandler(); 
+    }
+
+    if (syscallCode > GETSUPPORT) {
+        programTrapHandler();
     }
     
     /* Dispatch to appropriate syscall handler */
@@ -371,6 +375,10 @@ void passUpOrDie(int passUpCode)
         /* Copy exception state to support structure */
         copyState(exceptStatePtr, 
                   &currentProcess->p_supportStruct->sup_exceptState[passUpCode]);  
+        /* Update the current process's time */
+        cpu_t currentTOD;
+        STCK(currentTOD);
+        currentProcess->p_time += (currentTOD - TOD_start);
 
         /* Load context from support structure */
         LDCXT(currentProcess->p_supportStruct->sup_exceptContext[passUpCode].c_stackPtr, 
@@ -390,7 +398,7 @@ void passUpOrDie(int passUpCode)
  * with PGFAULTEXCEPT code.
  */
 void tlbExceptionHandler() {
-    passUpOrDie(PGFAULTEXCEPT);  
+    passUpOrDie(PGFAULTEXCEPT);  /* Pass up with TLB exception code */
 }
 
 /***************************************************************************
@@ -399,7 +407,7 @@ void tlbExceptionHandler() {
  * with GENERALEXCEPT code.
  */
 void programTrapHandler() {
-    passUpOrDie(GENERALEXCEPT);
+    passUpOrDie(GENERALEXCEPT);  /* Pass up with general exception code */
 }
 
 /***************************************************************************
@@ -418,7 +426,7 @@ void uTLB_RefillHandler() {
     setENTRYHI(supportPtr->sup_privatePgTbl[vpn].entryHI);  /* Set entry HI */
     setENTRYLO(supportPtr->sup_privatePgTbl[vpn].entryLO);  /* Set entry LO */
 
-    TLBWR();  /* Write to TLB */
+    TLBWR();  /* Write to TLB */ 
 
     LDST(exceptionState);  /* Return control to the process */
 }
