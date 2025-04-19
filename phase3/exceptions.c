@@ -106,30 +106,39 @@ void syscallHandler() {
     switch (syscallCode) {
         case CREATEPROCESS: {
             createProcess();  /* SYS1 */
+            break;
         }
         case TERMPROCESS: {
             terminateProcess(currentProcess);  /* SYS2 */
+            break;
         } 
         case PASSEREN: {
             passeren();  /* SYS3 */
+            break;
         }
         case VERHOGEN: {
             verhogen();  /* SYS4 */
+            break;
         }
         case WAITFORIO: {
             waitIO();  /* SYS5 */
+            break;
         }
         case GETCPUTIME: {
             getCPUTime();  /* SYS6 */
+            break;
         }
         case WAITFORCLOCK: {
             waitClock();  /* SYS7 */
+            break;
         }
         case GETSUPPORT: {
             getSupportData();  /* SYS8 */
+            break;
         }
         default: {			
             passUpOrDie(GENERALEXCEPT);  /* Unknown syscall - pass up or terminate */
+            break;
         }
     }
 }

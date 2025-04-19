@@ -75,8 +75,8 @@ void supGeneralExceptionHandler() {
     support_t *supportPtr = (support_t*) SYSCALL(GETSUPPORT, 0, 0, 0);
 
     /* get exception type */
-    int cause = (supportPtr->sup_exceptState[GENERALEXCEPT].s_cause & CAUSE_EXCCODE_MASK) >> CAUSE_EXCCODE_SHIFT;
-    
+    int cause = CAUSE_GET_EXCCODE(supportPtr->sup_exceptState[GENERALEXCEPT].s_cause);
+
     /* check if exception is syscall */
     if (cause == SYSCALL_EXCEPTION) {
         supSyscallHandler(supportPtr);
@@ -124,7 +124,6 @@ void supSyscallHandler(support_t *supportPtr) {
         }
         case READTERMINAL: {
             debug16(0, 0, 0, 0);
-
             readFromTerminal(excState, asid);  /* SYS13 */
             debug5(0, 0, 0, 0);
             break;
@@ -186,7 +185,7 @@ void writeToPrinter(state_t *excState, int asid) {
     char *virtAddr = (char *) excState->s_a1;
 
     /* get length of transmitted string */
-    int length = excState->s_a2;
+    int length = (int) excState->s_a2;
 
     if ((int) virtAddr < KUSEG || length < 0 || length > MAXSTRLEN) {
         supProgramTrapHandler();
@@ -202,10 +201,10 @@ void writeToPrinter(state_t *excState, int asid) {
     int printSem = ((PRNTINT - DISKINT) * DEVPERINT) + printNo;
 
     /* get mutex for printer device */
-    mutex(1, (int *) &devSemaphore[printSem]);
+    mutex(1, &devSemaphore[printSem]);
 
     int error = 0;
-    int status, statusCode;
+    unsigned int status, statusCode;
     int i = 0;
     while (!error && i < length) {
         devrega->devreg[printSem].d_data0 = *virtAddr;
@@ -231,13 +230,13 @@ void writeToPrinter(state_t *excState, int asid) {
         excState->s_v0 = -statusCode;
     }
     /* release mutex */
-    mutex(0, (int *) &devSemaphore[printSem]);
+    mutex(0, &devSemaphore[printSem]);
     LDST(excState);
 }
 
 void writeToTerminal(state_t *excState, int asid) {
     char *virtAddr = (char *) excState->s_a1;
-    int length = excState->s_a2;
+    int length = (int) excState->s_a2;
 
     if ((int) virtAddr < KUSEG || length < 0 || length > MAXSTRLEN) {
         supProgramTrapHandler();
@@ -248,14 +247,14 @@ void writeToTerminal(state_t *excState, int asid) {
     int termSem = ((TERMINT - DISKINT) * DEVPERINT) + termNo;
 
     /* get mutex for terminal device */
-    mutex(1, (int *) &devSemaphore[termSem + DEVPERINT]);
+    mutex(1, &devSemaphore[termSem + DEVPERINT]);
 
     int error = 0;
-    int status, statusCode;
+    unsigned int status, statusCode;
     int i = 0;
     while (!error && i < length) {
         toggleInterrupts(0);
-        devrega->devreg[termSem].t_transm_command = *virtAddr << BITSHIFT_8 | TRANSTATUS;
+        devrega->devreg[termSem].t_transm_command = (*virtAddr << BITSHIFT_8) | TRANSTATUS;
         status = SYSCALL(WAITFORIO, TERMINT, termNo, 0);
         toggleInterrupts(1);
 
@@ -277,7 +276,7 @@ void writeToTerminal(state_t *excState, int asid) {
         excState->s_v0 = -statusCode;
     }
     /* release mutex */
-    mutex(0, (int *) &devSemaphore[termSem]);
+    mutex(0, (int *) &devSemaphore[termSem + DEVPERINT]);
     LDST(excState);
 }
 
@@ -293,7 +292,7 @@ void readFromTerminal(state_t *excState, int asid) {
     int termSem = ((TERMINT - DISKINT) * DEVPERINT) + termNo;
 
     /* get mutex for terminal device */
-    mutex(1, (int *) &devSemaphore[termSem]);
+    mutex(1, &devSemaphore[termSem]);
 
     int error = 0;
     int status, statusCode;
@@ -311,7 +310,7 @@ void readFromTerminal(state_t *excState, int asid) {
             virtAddr++;
             i++;
 
-            if (status >> BITSHIFT_8 == '\n') {
+            if (status >> BITSHIFT_8 == EOL) {
                 done = 1;
             }
         } else {
@@ -320,7 +319,7 @@ void readFromTerminal(state_t *excState, int asid) {
         }
     }
     /* release mutex */
-    mutex(0, (int *) &devSemaphore[termSem]);
+    mutex(0, &devSemaphore[termSem]);
 
     if (!error) {
         /* save number of chars received in v0 register */

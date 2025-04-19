@@ -9,7 +9,7 @@
 
 int devSemaphore[DEVICE_COUNT-1]; 
 int masterSemaphore; 
-HIDDEN void createUProc(int id);
+HIDDEN void initUProc(int id);
 HIDDEN support_t supStructs[UPROCMAX+1];
 
 void debug8 (int a, int b, int c, int d) {
@@ -20,19 +20,19 @@ void debug8 (int a, int b, int c, int d) {
 
 void test() {
 	int i;
-	for(i=0; i < (DEVICE_COUNT-1); i++) {
+	for(i = 0; i < (DEVICE_COUNT-1); i++) {
 		devSemaphore[i] = 1;
 	}	
 
 	initSwapStructs();
 
 	int id;
-	for(id=1; id <= UPROCMAX; id++) {
-		createUProc(id);
+	for(id = 1; id <= UPROCMAX; id++) {
+		initUProc(id);
 	}
     
 	masterSemaphore = 0;
-	for(i=0; i < UPROCMAX; i++) {
+	for(i = 0; i < UPROCMAX; i++) {
 		SYSCALL(PASSEREN, (int) &masterSemaphore, 0, 0);
 	}
     
@@ -41,11 +41,11 @@ void test() {
 
 } 
 
-void createUProc(int id) {
+void initUProc(int id) {
     state_t newState;
     newState.s_pc = (memaddr) TEXTAREAADDR;
     newState.s_t9 = (memaddr) TEXTAREAADDR;
-    newState.s_sp = (memaddr) STACKPAGEADDR;
+    newState.s_sp = (int) STACKPAGEADDR;
     newState.s_status = ALLOFF | TEBITON | IMON | IEPON | UMON;
 
     supStructs[id].sup_asid = id;

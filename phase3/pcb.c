@@ -23,6 +23,7 @@
 ****************************************************************************/
 
 HIDDEN pcb_PTR pcbFree_h; /* Pointer to the head of the free pcb list */
+HIDDEN pcb_t pcbFree_list[MAXPROC];
 
 /****************************************************************************
  * Function: freePcb
@@ -73,7 +74,6 @@ pcb_PTR allocPcb() {
  * data structure initialization. 
  */
 void initPcbs() {
-	HIDDEN pcb_t pcbFree_list[MAXPROC];
 	pcbFree_h = mkEmptyProcQ();
 
 	int i;

@@ -2,6 +2,7 @@
 
 swap_t swapPool[POOLSIZE];
 int swapPoolSem;         
+HIDDEN int nextVictim = 0;
 
 void toggleInterrupts(int enable) {
     unsigned int status = getSTATUS();
@@ -26,7 +27,7 @@ void update_tlb_handler(ptEntry_t *ptEntry) {
 
 /* rr */
 int pickVictim() {
-    int nextVictim = 0;
+    
     nextVictim = (nextVictim + 1) % POOLSIZE;
     return nextVictim;
 }
@@ -146,7 +147,8 @@ void supTlbExceptionHandler() {
         swapPool[victimIndex].swap_ptePtr->entryLO = swapPool[victimIndex].swap_ptePtr->entryLO & VALIDOFF;
         
         /* clear tlb to force reload of updated entries */
-        update_tlb_handler(swapPool[victimIndex].swap_ptePtr);
+        /* update_tlb_handler(swapPool[victimIndex].swap_ptePtr); */
+        TLBCLR();
         
         /* reenble interrupts */
         toggleInterrupts(TRUE);
@@ -181,7 +183,8 @@ void supTlbExceptionHandler() {
 
     toggleInterrupts(FALSE);
     supportPtr->sup_privatePgTbl[missingPage].entryLO = frameAddr | VALIDON | DIRTYON;
-    update_tlb_handler(&(supportPtr->sup_privatePgTbl[missingPage]));
+/*  update_tlb_handler(&(supportPtr->sup_privatePgTbl[missingPage]));*/
+    TLBCLR();
     toggleInterrupts(TRUE);
 
     mutex(0, &swapPoolSem);

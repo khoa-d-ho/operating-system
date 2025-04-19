@@ -193,6 +193,14 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
         scheduler();
     }
 
+	exceptionState->s_cause &= ~(
+		(lineNo==DISKINT)  ? INTERRUPT_DISK   :
+		(lineNo==FLASHINT) ? INTERRUPT_FLASH  :
+		(lineNo==NETWINT)  ? INTERRUPT_NETW   :
+		(lineNo==PRNTINT)  ? INTERRUPT_PRINT  :
+		(lineNo==TERMINT)  ? INTERRUPT_TERM   : 0
+  );
+
 	/* Copy the state of the current process to the exception state */
     copyState(exceptionState, &(currentProcess->p_s));
     loadNextState(currentProcess->p_s);
@@ -208,6 +216,8 @@ void nonTimerInterrupt(devregarea_t *devRegA, int lineNo) {
  */
 void pltInterrupt() {
 	/* Get the current time (when the interrupt occurred) */
+	state_PTR exceptionState = (state_PTR) BIOSDATAPAGE;
+
 	int stopTod;
 	STCK(stopTod);
 	
@@ -220,6 +230,7 @@ void pltInterrupt() {
 		currentProcess = mkEmptyProcQ();
 	}
 
+	exceptionState->s_cause &= ~INTERRUPT_PLT;
 	/* Acknowledge the interrupt and call the scheduler */
 	setTIMER(QUANTUM);
 	scheduler();
@@ -235,6 +246,8 @@ void pltInterrupt() {
  */
 void itInterrupt() {
 	/* Acknowledge the interrupt by loading the interval timer */
+	state_PTR exceptionState = (state_PTR) BIOSDATAPAGE;
+
 	LDIT(CLOCKINTERVAL);
 
 	/* Get the first process in the blocked queue */
@@ -253,6 +266,7 @@ void itInterrupt() {
 		scheduler();
 	}
 
+	exceptionState->s_cause &= ~INTERRUPT_IT;
 	copyState((state_PTR)BIOSDATAPAGE, &(currentProcess->p_s));
 	loadNextState(currentProcess->p_s);
 }
