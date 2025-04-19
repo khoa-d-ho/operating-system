@@ -223,7 +223,7 @@
 #define DEV_REG_FIELD(line, dev, field) (* ((memaddr *) (DEV_REG_ADDRESS(line, dev) + field * 0x4)))
 
 /* Miscellaneous */
-#define UPROCMAX       1            /* Maximum number of user processes */
+#define UPROCMAX       2            /* Maximum number of user processes */
 #define BITMASK_8      0xFF
 #define BITSHIFT_8     8
 #define PRINTCHR    2
@@ -241,6 +241,7 @@
 #define ASIDSHIFT 6          /* shift value for ASID */
 #define UPROCSTART 0x80000
 #define PAGESTACK 0XBFFFF
+#define EOL 0x0A
 
 
 #define POOLBASEADDR 0x20020000     /* base address of swap pool */
