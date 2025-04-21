@@ -35,7 +35,6 @@ void test() {
 	for(i = 0; i < UPROCMAX; i++) {
 		SYSCALL(PASSEREN, (int) &masterSemaphore, 0, 0);
 	}
-    
 
 	SYSCALL(TERMPROCESS, 0, 0, 0);
 

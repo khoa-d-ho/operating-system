@@ -10,10 +10,7 @@
 /* helper */
 extern swap_t swapPool[POOLSIZE];
 
-int pickVictim();     
-int flashIO(int operation, int devNo, int blockNo, int frameAddr);
-void toggleInterrupts(int enable);
-
+extern void toggleInterrupts(int enable);
 extern void mutex(int state, int *semAddress);
 extern void initSwapStructs();
 extern void supTlbExceptionHandler();

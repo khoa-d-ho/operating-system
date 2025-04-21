@@ -1,81 +1,14 @@
 #include "../h/sysSupport.h"
 
-void debug1 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug2 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug3 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug4 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug5 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug6 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug7 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug12 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug13 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-void debug14 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-void debug15 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-void debug16 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-
 void supGeneralExceptionHandler() {
     /* get support structure */
     support_t *supportPtr = (support_t*) SYSCALL(GETSUPPORT, 0, 0, 0);
+    state_PTR savedExceptionState = &(supportPtr->sup_exceptState[GENERALEXCEPT]);
+
+    savedExceptionState->s_pc += WORDLEN;
 
     /* get exception type */
-    int cause = CAUSE_GET_EXCCODE(supportPtr->sup_exceptState[GENERALEXCEPT].s_cause);
+    int cause = CAUSE_GET_EXCCODE(savedExceptionState->s_cause);
 
     /* check if exception is syscall */
     if (cause == SYSCALL_EXCEPTION) {
@@ -90,52 +23,33 @@ void supSyscallHandler(support_t *supportPtr) {
 
     int asid = supportPtr->sup_asid;
 
-    /* increment pc to next instruction */
-    excState->s_pc += WORDLEN;
-
     /* get syscall code */
     int syscallCode = excState->s_a0;
     switch (syscallCode) {
         case TERMINATE: {
-            debug12(0, 0, 0, 0);
             terminateUProc(NULL);  /* SYS9 */
-            debug1(0, 0, 0, 0);
             break;
         }
         case GETTOD: {
-            debug13(0, 0, 0, 0);
             getTod(excState);  /* SYS10 */
-            debug2(0, 0, 0, 0);
             break;
         }
         case WRITEPRINTER: {
-            debug14(0, 0, 0, 0);
-
             writeToPrinter(excState, asid);  /* SYS11 */
-            debug3(0, 0, 0, 0);
             break;
         }
         case WRITETERMINAL: {
-            debug15(0, 0, 0, 0);
-
             writeToTerminal(excState, asid);  /* SYS12 */
-            debug4(0, 0, 0, 0);
             break;
         }
         case READTERMINAL: {
-            debug16(0, 0, 0, 0);
             readFromTerminal(excState, asid);  /* SYS13 */
-            debug5(0, 0, 0, 0);
             break;
         }
         default: {
-            debug7(0, 0, 0, 0);		
             supProgramTrapHandler();  /* Unknown syscall - terminate process */
-            debug6(0, 0, 0, 0);
         }
     }
-    /* load state from support struct */
-/*     LDST(excState);  */
 }
         
 
@@ -234,6 +148,7 @@ void writeToPrinter(state_t *excState, int asid) {
     LDST(excState);
 }
 
+/*sys12*/
 void writeToTerminal(state_t *excState, int asid) {
     char *virtAddr = (char *) excState->s_a1;
     int length = (int) excState->s_a2;
@@ -280,6 +195,7 @@ void writeToTerminal(state_t *excState, int asid) {
     LDST(excState);
 }
 
+/*sys13*/
 void readFromTerminal(state_t *excState, int asid) {
     char *virtAddr = (char *) excState->s_a1;
 
@@ -330,6 +246,3 @@ void readFromTerminal(state_t *excState, int asid) {
     }
     LDST(excState);
 }
-
-
-

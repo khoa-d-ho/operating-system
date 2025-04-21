@@ -63,7 +63,7 @@ void main() {
     firstProcess->p_s.s_pc = (memaddr)test;    /* Set PC to test */
     firstProcess->p_s.s_t9 = (memaddr)test;    /* Set t9 to test */
     firstProcess->p_s.s_status = ALLOFF | IEPON | IMON | TEBITON;  /* Set status register */
-    firstProcess->p_s.s_sp = ramtop - FRAMESIZE;  /* Set stack pointer to top of RAM */
+    firstProcess->p_s.s_sp = ramtop;  /* Set stack pointer to top of RAM */
     firstProcess->p_time = 0;
     firstProcess->p_semAdd = NULL;
     firstProcess->p_supportStruct = NULL;

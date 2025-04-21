@@ -2,43 +2,20 @@
 
 swap_t swapPool[POOLSIZE];
 int swapPoolSem;         
-HIDDEN int nextVictim = 0;
 
-void toggleInterrupts(int enable) {
-    unsigned int status = getSTATUS();
-    
-    if (enable) {
-        setSTATUS(status | IECON);
-    } else {
-        setSTATUS(status & IECOFF);
-    }
-}
-
-void update_tlb_handler(ptEntry_t *ptEntry) {
-    setENTRYHI(ptEntry->entryHI); /* Load the page of interest's virtual page number (VPN) and ASID into EntryHi*/
-    TLBP(); /*probe the TLB to searches for a matching entry using the current EntryHi*/
-
-    /*In Index CP0 control register, check INDEX.P bit (bit 31 of INDEX). We perform bitwise AND with 0x8000000 to isolate bit 31*/
-    if ((KUSEG & getINDEX()) == 0){ /*If P bit == 0 -> found a matching entry. Else P bit == 1 if not found*/
-        setENTRYLO(ptEntry->entryLO); /*set content of entryLO to write to Index.TLB-INDEX*/
-        TLBWI(); /* Write content of entryHI and entryLO CP0 registers into Index.TLB-INDEX -> This updates the cached entry to match the page table*/
-    }
-}
-
-/* rr */
-int pickVictim() {
-    
-    nextVictim = (nextVictim + 1) % POOLSIZE;
+HIDDEN int pickVictim() {
+    HIDDEN int nextVictim;
+    nextVictim = (nextVictim + 1) % (POOLSIZE);
     return nextVictim;
 }
 
-int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
+HIDDEN int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
     int devIndex = ((FLASHINT - DISKINT) * DEVPERINT) + devNo;
     
     /* get device registers */
     devregarea_t *devRegArea = (devregarea_t *) RAMBASEADDR;
 
-    mutex(TRUE, (int *) &devSemaphore[devIndex]); /* get mutex for device */
+    mutex(TRUE, &devSemaphore[devIndex]); /* get mutex for device */
 
     devRegArea->devreg[devIndex].d_data0 = frameAddr;
     toggleInterrupts(FALSE);
@@ -46,7 +23,7 @@ int flashIO(int operation, int devNo, int blockNo, int frameAddr) {
     int status = SYSCALL(WAITFORIO, FLASHINT, devNo, (operation == READBLK));
     toggleInterrupts(TRUE);
 
-    mutex(FALSE, (int *) &devSemaphore[devIndex]);
+    mutex(FALSE, &devSemaphore[devIndex]);
 
     if (status != READY) {
         /* handle error */
@@ -67,12 +44,22 @@ void mutex(int yes, int *semAddress) {
 void initSwapStructs() {
     int i;
     
-    /* initialize semaphore to 1 (mutex) */
-    swapPoolSem = 1;
-    
     /* initialize swap pool table entries */
     for (i = 0; i < POOLSIZE; i++) {
         swapPool[i].swap_asid = FREEFRAME;
+    }
+
+    /* initialize semaphore to 1 (mutex) */
+    swapPoolSem = 1;
+}
+
+void toggleInterrupts(int enable) {
+    unsigned int status = getSTATUS();
+    
+    if (enable) {
+        setSTATUS(status | IECON);
+    } else {
+        setSTATUS(status & IECOFF);
     }
 }
 
@@ -97,30 +84,11 @@ void initSwapStructs() {
  * 13. release mutex (v)
  * 14. return control to retry faulting instruction
  *****************************************************************************/
-void debug9 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug10 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
-void debug11 (int a, int b, int c, int d) {
-    int i;
-    i = 0;
-    i++;
-}
-
 void supTlbExceptionHandler() {
-    debug9(0, 0, 0, 0);
     support_t *supportPtr = (support_t *) SYSCALL(GETSUPPORT, 0, 0, 0);
-    debug10(0, 0, 0, 0);
+    state_PTR excState = &(supportPtr->sup_exceptState[PGFAULTEXCEPT]);
 
-    int cause = (supportPtr->sup_exceptState[PGFAULTEXCEPT].s_cause & CAUSE_EXCCODE_MASK) >> CAUSE_EXCCODE_SHIFT;
+    int cause = CAUSE_GET_EXCCODE(excState->s_cause);
     
     /* if tlb modification exception, program trap */
     if (cause == TLBMOD) {
@@ -128,10 +96,10 @@ void supTlbExceptionHandler() {
     }
 
     /* get mutex over swap pool */
-    mutex(1, &swapPoolSem);
+    mutex(TRUE, &swapPoolSem);
 
     /* get missing page number */
-    int missingPage = (supportPtr->sup_exceptState[PGFAULTEXCEPT].s_entryHI & VPNMASK) >> VPNSHIFT;
+    int missingPage = (excState->s_entryHI & VPNMASK) >> VPNSHIFT;
     missingPage %= MAXPAGES;
     
     /* select victim frame using round-robin */
@@ -140,6 +108,10 @@ void supTlbExceptionHandler() {
     
     /* check if victim frame occupied */
     if (swapPool[victimIndex].swap_asid != FREEFRAME) {
+        int victimAsid = swapPool[victimIndex].swap_asid;
+        int victimPage = swapPool[victimIndex].swap_pageNo;
+        int devNo = victimAsid - 1;
+
         /* disable interrupts while updating page tables */
         toggleInterrupts(FALSE);
         
@@ -147,17 +119,11 @@ void supTlbExceptionHandler() {
         swapPool[victimIndex].swap_ptePtr->entryLO = swapPool[victimIndex].swap_ptePtr->entryLO & VALIDOFF;
         
         /* clear tlb to force reload of updated entries */
-        /* update_tlb_handler(swapPool[victimIndex].swap_ptePtr); */
         TLBCLR();
         
         /* reenble interrupts */
         toggleInterrupts(TRUE);
         
-        /* save victim page to backing store */
-        int victimAsid = swapPool[victimIndex].swap_asid;
-        int victimPage = swapPool[victimIndex].swap_pageNo;
-        int devNo = victimAsid - 1;
-
         int status = flashIO(WRITEBLK, devNo, victimPage, frameAddr);
         if (status != READY) {
             /* terminate if flash operation fails */
@@ -171,8 +137,6 @@ void supTlbExceptionHandler() {
     int status = flashIO(READBLK, devNo, missingPage, frameAddr);
     
     if (status != READY) {
-        debug11(0, 0, 0, 0);
-        /* terminate if flash operation fails */
         supProgramTrapHandler();
     }
     
@@ -183,14 +147,11 @@ void supTlbExceptionHandler() {
 
     toggleInterrupts(FALSE);
     supportPtr->sup_privatePgTbl[missingPage].entryLO = frameAddr | VALIDON | DIRTYON;
-/*  update_tlb_handler(&(supportPtr->sup_privatePgTbl[missingPage]));*/
     TLBCLR();
     toggleInterrupts(TRUE);
 
     mutex(0, &swapPoolSem);
 
     /* return to the exception state to retry instruction */
-    LDST(&(supportPtr->sup_exceptState[PGFAULTEXCEPT]));
+    LDST(excState);
 }
-
-

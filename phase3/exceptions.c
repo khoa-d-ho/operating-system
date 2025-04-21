@@ -288,7 +288,7 @@ void waitIO() {
 
     /* Calculate semaphore index based on device type */
     int semIndex;
-    if (term_flag && line == TERMINT) {
+    if (!term_flag && line == TERMINT) {
         /* Terminal device - write operation */
         semIndex = dev + (line - DISKINT) * DEVPERINT + DEVPERINT; 
     } else {
