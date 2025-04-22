@@ -13,6 +13,7 @@
  *  Written by Khoa Ho & Hieu Tran
  */
 
+/* iterative choose function */
 int choose(int n, int k) {
     int res = 1;
     int i;
