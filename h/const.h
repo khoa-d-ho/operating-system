@@ -29,6 +29,10 @@
 /* utility constants */
 #define	TRUE			    1
 #define	FALSE			    0
+#define ON                1
+#define OFF               0
+#define OK				    0
+#define ERROR			    -1
 #define HIDDEN			  static
 #define EOS				    '\0'
 #define MAXINT       0x7FFFFFFF
@@ -223,8 +227,9 @@
 #define DEV_REG_FIELD(line, dev, field) (* ((memaddr *) (DEV_REG_ADDRESS(line, dev) + field * 0x4)))
 
 /* Miscellaneous */
-#define UPROCMAX       2            /* Maximum number of user processes */
+#define UPROCMAX       8            /* Maximum number of user processes */
 #define BITMASK_8      0xFF
+#define INDEX_PMASK 0x80000000
 #define BITSHIFT_8     8
 #define PRINTCHR    2
 #define CHAR_TRANSMITTED 5
@@ -241,6 +246,7 @@
 #define ASIDSHIFT 6          /* shift value for ASID */
 #define UPROCSTART 0x80000
 #define PAGESTACK 0XBFFFF
+#define TOPSTACK 499
 #define EOL 0x0A
 
 
