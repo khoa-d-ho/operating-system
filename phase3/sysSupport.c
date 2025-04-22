@@ -333,11 +333,13 @@ void readFromTerminal(state_t *excState, int asid) {
 
     /* check if terminal device is busy */
     while (!error && !done) {
+        /* loop until all chars are received or error occurs */
         toggleInterrupts(0);
         devrega->devreg[termSem].t_recv_command = TRANSTATUS;
         status = SYSCALL(WAITFORIO, TERMINT, termNo, 1);
         toggleInterrupts(1);
 
+        /* check status code */
         statusCode = status & STATUS_MASK;
         if (statusCode == CHAR_RECEIVED) {
             /* extract the character from the status (upper half) */
