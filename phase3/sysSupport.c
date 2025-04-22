@@ -8,7 +8,7 @@
  *
  *  Description:
  *  This module defines the Support Level handlers for system calls and
- *  exceptions (SYS9 – SYS13). It extends the “Pass Up or Die” model:
+ *  exceptions (SYS9 – SYS13). It extends the “Pass Up or Die” model in that
  *  user-mode exceptions are handled here if a support structure exists;
  *  otherwise, the U-proc is terminated.
  *
@@ -36,6 +36,13 @@
  *  April 2025
  ****************************************************************************/
 
+/* Syscall handler functions */
+HIDDEN void terminateUProc(int* sem);
+HIDDEN void getTod(state_t *excState);
+HIDDEN void writeToPrinter(state_t *excState, int asid);
+HIDDEN void writeToTerminal(state_t *excState, int asid);
+HIDDEN void readFromTerminal(state_t *excState, int asid);
+
 /*****************************************************************************
  *  Function: supGeneralExceptionHandler
  *
@@ -48,6 +55,7 @@ void supGeneralExceptionHandler() {
     support_t *supportPtr = (support_t*) SYSCALL(GETSUPPORT, 0, 0, 0);
     state_PTR savedExceptionState = &(supportPtr->sup_exceptState[GENERALEXCEPT]);
 
+    /* increment PC to next instruction */
     savedExceptionState->s_pc += WORDLEN;
 
     /* get exception type */
@@ -128,19 +136,15 @@ void terminateUProc(int* sem) {
     int asid = currentProcess->p_supportStruct->sup_asid;
 
     /* clear swap pool entry */
-    int i = 0;
-    for (i = 0; i < POOLSIZE; i++) {
-        if (swapPool[i].swap_asid == asid) {
-            swapPool[i].swap_asid = FREEFRAME;
-        }
-    }
+    markAllFramesFree(asid);
+
     /* check if process holds mutex on swap pool semaphore*/
     if (sem != NULL) {
         /* release mutex */
-        mutex(0, sem);
+        mutex(OFF, sem);
     }
     /* release mutex on master semaphore */
-    mutex(0, (int *) &masterSemaphore);
+    mutex(OFF, (int *) &masterSemaphore);
 
     /* terminate process */
     SYSCALL(TERMPROCESS, 0, 0, 0);
@@ -176,7 +180,8 @@ void getTod(state_t *excState) {
  */
 void writeToPrinter(state_t *excState, int asid) {
     /* variables for busy printer check */
-    int error = i = 0;
+    int i = 0; /* count of chars transmitted */
+    int error = 0;
     int status, statusCode;
 
     /* get virtual address of first char of transmitted string */
@@ -198,16 +203,16 @@ void writeToPrinter(state_t *excState, int asid) {
     int printSem = ((PRNTINT - DISKINT) * DEVPERINT) + printNo;
 
     /* get mutex for printer device */
-    mutex(1, &devSemaphore[printSem]);
+    mutex(ON, &devSemaphore[printSem]);
 
     /* check if printer device is busy */
     while (!error && i < length) {
         /* loop until all chars are transmitted or error occurs */
         devrega->devreg[printSem].d_data0 = *virtAddr;
-        toggleInterrupts(0);
+        toggleInterrupts(OFF);
         devrega->devreg[printSem].d_command = PRINTCHR;
         status = SYSCALL(WAITFORIO, PRNTINT, printNo, 0);
-        toggleInterrupts(1);
+        toggleInterrupts(ON);
 
         /* check status code */
         statusCode = status & STATUS_MASK;
@@ -227,7 +232,7 @@ void writeToPrinter(state_t *excState, int asid) {
         excState->s_v0 = -statusCode;
     }
     /* release mutex */
-    mutex(0, &devSemaphore[printSem]);
+    mutex(OFF, &devSemaphore[printSem]);
     LDST(excState);
 }
 
@@ -243,8 +248,9 @@ void writeToPrinter(state_t *excState, int asid) {
  */
 void writeToTerminal(state_t *excState, int asid) {
     /* variables for busy terminal check */
-    int i = error = 0;
-    unsigned int status, statusCode;
+    int i = 0;
+    int error = 0;
+    int status, statusCode;
 
     /* get virtual address of first char of transmitted string */
     char *virtAddr = (char *) excState->s_a1; 
@@ -310,7 +316,9 @@ void writeToTerminal(state_t *excState, int asid) {
  */
 void readFromTerminal(state_t *excState, int asid) {
     /* variables for busy terminal check */
-    int i = error = done = 0;
+    int i = 0;
+    int error = 0; 
+    int done = 0;
     int status, statusCode;
 
     /* get virtual address of first char of received string */
@@ -329,15 +337,15 @@ void readFromTerminal(state_t *excState, int asid) {
     int termSem = ((TERMINT - DISKINT) * DEVPERINT) + termNo;
 
     /* get mutex for terminal device */
-    mutex(1, &devSemaphore[termSem]);
+    mutex(ON, &devSemaphore[termSem]);
 
     /* check if terminal device is busy */
     while (!error && !done) {
         /* loop until all chars are received or error occurs */
-        toggleInterrupts(0);
+        toggleInterrupts(OFF);
         devrega->devreg[termSem].t_recv_command = TRANSTATUS;
         status = SYSCALL(WAITFORIO, TERMINT, termNo, 1);
-        toggleInterrupts(1);
+        toggleInterrupts(ON);
 
         /* check status code */
         statusCode = status & STATUS_MASK;
@@ -356,7 +364,7 @@ void readFromTerminal(state_t *excState, int asid) {
         }
     }
     /* release mutex */
-    mutex(0, &devSemaphore[termSem]);
+    mutex(OFF, &devSemaphore[termSem]);
 
     if (!error) {
         /* save number of chars received in v0 register */
