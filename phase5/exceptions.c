@@ -83,7 +83,7 @@ void exceptionHandler() {
 }
 
 /***************************************************************************
- * Function: syscallHandler
+ * Function: interruptHandler
  * System call handler - Processes SYSCALL exceptions.
  * Checks privilege level and dispatches to the appropriate
  * system call handler based on the system call code in a0.
