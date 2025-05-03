@@ -20,9 +20,7 @@
 #include "../h/sysSupport.h"
 
 void initADL();
-
-void delayFacility();
-
+void delayFacility(support_t *supportPtr);
 void delayDaemon();
 
 #endif

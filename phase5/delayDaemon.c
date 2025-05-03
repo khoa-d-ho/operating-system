@@ -7,12 +7,12 @@ HIDDEN delayd_t *delayd_h;
 HIDDEN int adl_sem = 1; 
 
 /* Helper functions */
-HIDDEN void delayd_freeNode(delayd_t *node) {
+HIDDEN void delayd_freeNode(delayd_t *node) { /*same*/
     node->d_next = delaydFree_h;
     delaydFree_h = node;
 }
 
-HIDDEN delayd_t *delayd_allocNode() {
+HIDDEN delayd_t *delayd_allocNode() { /*same*/
     if (delaydFree_h == NULL) {
         return NULL;
     }
@@ -98,7 +98,7 @@ void initADL(void) {
     daemonState.s_t9 = (memaddr) delayDaemon;
     daemonState.s_sp = ramtop - FRAMESIZE; 
     daemonState.s_status = ALLOFF | IEPON | IMON | TEBITON;
-    daemonState.s_entryHI = DELAY_ASID << ASIDSHIFT;
+    daemonState.s_entryHI = (DELAY_ASID << ASIDSHIFT);
 
     int result = SYSCALL(CREATEPROCESS, (int)&daemonState, 0, 0); 
 
@@ -131,8 +131,7 @@ void delayDaemon() {
  * in the ADL with the given delay time and adds it to the ADL. It also sets
  * up the support structure for the U-process.
  */
-void delayFacility() {
-    support_t *supportPtr = (support_t *) SYSCALL(GETSUPPORT, 0, 0, 0);
+void delayFacility(support_t *supportPtr) {
     int delayDuration = supportPtr->sup_exceptState[GENERALEXCEPT].s_a1;
 
     if (delayDuration < 0) {
@@ -152,7 +151,7 @@ void delayFacility() {
     node->d_supStruct = supportPtr;
     node->d_wakeTime = now + ((cpu_t)delayDuration * MICROSECONDS);
     delayd_insertADL(node);
-    
+
     toggleInterrupts(OFF);
     mutex(0, &adl_sem);
     mutex(1, &(supportPtr->sup_privateSem));

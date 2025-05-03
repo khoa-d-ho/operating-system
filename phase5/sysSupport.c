@@ -107,13 +107,14 @@ void supSyscallHandler(support_t *supportPtr) {
             break;
         }
         case DELAY: {
-            delayFacility();  /* SYS18 */
+            delayFacility(supportPtr);  /* SYS18 */
             break;
         }
         default: {
             supProgramTrapHandler();  /* unknown syscall - terminate process */
         }
     }
+    LDST(excState);  /* resume user execution */
 }
 /*****************************************************************************
  *  Function: supProgramTrapHandler
