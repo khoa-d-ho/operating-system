@@ -15,6 +15,7 @@
 #include "../h/initial.h"
 #include "../h/scheduler.h"
 #include "../h/interrupts.h"
+#include "../h/delayDaemon.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 /* Main Exception Handler */

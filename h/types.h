@@ -94,6 +94,7 @@ typedef struct support_t {
 	ptEntry_t	sup_privatePgTbl[MAXPAGES]; /* private page table */
 	int 		sup_stackTLB[500];		/* stack for TLB refill */
 	int 		sup_stackGen[500];	/* stack for general exceptions */
+	int 		sup_privateSem;
 	/*... other fields to be added later*/
 } support_t;
 
@@ -129,6 +130,11 @@ typedef struct semd_t {
 	pcb_t 			*s_procQ;
 } semd_t, *semd_PTR;
 
+typedef struct delayd_t {
+	struct delayd_t *d_next;
+	cpu_t 			*d_wakeTime;
+	support_t		*d_supStruct;
+} delayd_t, *delayd_PTR;
 
 #define	s_at	s_reg[0]
 #define	s_v0	s_reg[1]

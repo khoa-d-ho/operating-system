@@ -124,6 +124,7 @@
 #define GETCPUTIME       6
 #define WAITFORCLOCK     7
 #define GETSUPPORT       8
+#define DELAY            18
 
 /*Line Constants*/
 #define PROCESSOR 0
@@ -249,6 +250,8 @@
 #define TOPSTACK 499
 #define EOL 0x0A
 
+#define DELAY_ASID 0
+#define MICROSECONDS 1000000
 
 #define POOLBASEADDR 0x20020000     /* base address of swap pool */
 

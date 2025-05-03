@@ -30,6 +30,7 @@ void test() {
 
     /* Initialize swap structures for VM */
     initSwapStructs();
+    initADL();  /* Initialize the Active Delay List */
 
     /* Create user processes */
     int id;
@@ -91,6 +92,7 @@ HIDDEN void initUProc(int id) {
 HIDDEN void configSupStruct(int id) {
     /* Basic ASID assignment */
     supStructs[id].sup_asid = id;
+    supStructs[id].sup_privateSem = 0;
     
     /* Configure context for general exceptions */
     supStructs[id].sup_exceptContext[GENERALEXCEPT].c_pc = (memaddr) supGeneralExceptionHandler;

@@ -106,6 +106,10 @@ void supSyscallHandler(support_t *supportPtr) {
             readFromTerminal(excState, asid);  /* SYS13 */
             break;
         }
+        case DELAY: {
+            delayFacility();  /* SYS18 */
+            break;
+        }
         default: {
             supProgramTrapHandler();  /* unknown syscall - terminate process */
         }
