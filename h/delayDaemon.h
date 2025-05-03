@@ -18,6 +18,7 @@
 #include "../h/initProc.h"
 #include "../h/vmSupport.h"
 #include "../h/sysSupport.h"
+#include "/usr/include/umps3/umps/libumps.h"
 
 void initADL();
 void delayFacility(support_t *supportPtr);

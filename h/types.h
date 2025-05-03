@@ -132,7 +132,7 @@ typedef struct semd_t {
 
 typedef struct delayd_t {
 	struct delayd_t *d_next;
-	cpu_t 			*d_wakeTime;
+	cpu_t 			d_wakeTime;
 	support_t		*d_supStruct;
 } delayd_t, *delayd_PTR;
 

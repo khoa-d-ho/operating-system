@@ -30,7 +30,8 @@ void test() {
 
     /* Initialize swap structures for VM */
     initSwapStructs();
-    initADL();  /* Initialize the Active Delay List */
+    /* Initialize the Active Delay List */
+    initADL();  
 
     /* Create user processes */
     int id;
