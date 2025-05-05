@@ -14,9 +14,9 @@
 
 /* Local variables */
 HIDDEN delayd_t delayd_table[UPROCMAX + 2]; /* ADL table with dummy head and tail */
-HIDDEN delayd_t *delaydFree_h;              /* Free list of delayd_t nodes */
-HIDDEN delayd_t *delayd_h;                  /* Head of the ADL */
-HIDDEN int adl_sem = 1;                     /* Semaphore for ADL mutual exclusion */
+HIDDEN delayd_t *delaydFree_h;              /* free list of delayd_t nodes */
+HIDDEN delayd_t *delayd_h;                  /* head of the ADL */
+HIDDEN int adl_sem = 1;                     /* semaphore for ADL mutual exclusion */
 
 /* Helper functions */
 /****************************************************************************
@@ -46,14 +46,14 @@ HIDDEN void delayd_freeNode(delayd_t *node) {
  */
 HIDDEN delayd_t *delayd_allocNode() {
     if (delaydFree_h == NULL) {
-        /* No free nodes available */
+        /* no free nodes available */
         return NULL;
     }
-    /* Allocate a node from the free list */
+    /* allocate a node from the free list */
     delayd_t* node = delaydFree_h;
     delaydFree_h = delaydFree_h->d_next;
 
-    /* Initialize the node */
+    /* initialize the node */
     node->d_next = NULL;
     node->d_wakeTime = 0;
     node->d_supStruct = NULL;
@@ -75,7 +75,7 @@ HIDDEN void delayd_insertADL(delayd_t *node) {
     delayd_t *prev = delayd_h; /* dummy head */
     delayd_t *curr = delayd_h->d_next; /* first real node */
 
-    /* Traverse the list to find the correct position for the new node */
+    /* traverse the list to find the correct position for the new node */
     while (curr != NULL && curr->d_wakeTime <= node->d_wakeTime) {
         prev = curr;
         curr = curr->d_next;
@@ -93,28 +93,28 @@ HIDDEN void delayd_insertADL(delayd_t *node) {
  * returns it to the free list.
  */
 HIDDEN void processADL() {
-    /* Get current time of day in microseconds */
+    /* get current time of day in microseconds */
     cpu_t now;
     STCK(now);
 
     delayd_t* prev = delayd_h;         
     delayd_t* curr = delayd_h->d_next; 
 
-    /* Traverse the ADL and process all nodes whose wake time has expired */    
+    /* traverse the ADL and process all nodes whose wake time has expired */    
     while (curr != NULL && curr->d_wakeTime <= now) {
-        /* Save next before we free current node */
+        /* save next before we free current node */
         delayd_t* next = curr->d_next;
 
-        /* Wake up the U-proc by performing V on its private semaphore */
+        /* wake up the U-proc by performing V on its private semaphore */
         mutex(OFF, &(curr->d_supStruct->sup_privateSem));
 
-        /* Remove curr from ADL */
+        /* remove curr from ADL */
         prev->d_next = next;
 
-        /* Return node to free list */
+        /* return node to free list */
         delayd_freeNode(curr);
 
-        /* Move to the next node */
+        /* move to the next node */
         curr = next;
     }
 }
@@ -128,7 +128,7 @@ HIDDEN void processADL() {
  * initializes the free list of delayd_t nodes.
  */
 void initADL() {
-    /* Initialize the ADL with dummy head and tail */
+    /* initialize the ADL with dummy head and tail */
     delayd_h = &(delayd_table[0]);
     delayd_h->d_wakeTime = 0;
     delayd_h->d_supStruct = NULL;
@@ -138,7 +138,7 @@ void initADL() {
     delayd_h->d_next->d_supStruct = NULL;
     delayd_h->d_next->d_next = NULL;
 
-    /* Initialize the free list of delayd_t nodes */
+    /* initialize the free list of delayd_t nodes */
     delaydFree_h = &delayd_table[1];
     delayd_t* temp = delaydFree_h;
     
@@ -149,7 +149,7 @@ void initADL() {
     }
     temp->d_next = NULL;
     
-    /* Create the Delay Daemon process */
+    /* create the Delay Daemon process */
     memaddr ramtop;
     RAMTOP(ramtop);
     state_t daemonState;
@@ -162,7 +162,7 @@ void initADL() {
 
     int result = SYSCALL(CREATEPROCESS, (int)&daemonState, 0, 0); 
 
-    /* Terminate if creation failed */
+    /* terminate if creation failed */
     if (result != OK) {
         supProgramTrapHandler();  
     }
@@ -182,12 +182,12 @@ void initADL() {
  */
 void delayDaemon() {
     while (TRUE) {
-        /* Wait for pseudoclock signal */
+        /* wait for pseudoclock signal */
         SYSCALL(WAITFORCLOCK, 0, 0, 0); 
 
-        mutex(1, &adl_sem);
+        mutex(ON, &adl_sem);
         processADL();
-        mutex(0, &adl_sem);
+        mutex(OFF, &adl_sem);
     }
 }
 
@@ -211,7 +211,7 @@ void delayDaemon() {
 void delayFacility(support_t *supportPtr) {
     int delayDuration = supportPtr->sup_exceptState[GENERALEXCEPT].s_a1;
 
-    /* Check if delay duration is valid */
+    /* check if delay duration is valid */
     if (delayDuration < 0) {
         supProgramTrapHandler();
     }
@@ -219,23 +219,23 @@ void delayFacility(support_t *supportPtr) {
     cpu_t now;
     STCK(now);  
 
-    /* Allocate a delay event descriptor */
-    mutex(1, &adl_sem);  
+    /* allocate a delay event descriptor */
+    mutex(ON, &adl_sem);  
     delayd_t *node = delayd_allocNode();
     if (node == NULL) {
-        mutex(0, &adl_sem);
+        mutex(OFF, &adl_sem);
         supProgramTrapHandler();
     }
 
-    /* Set up the delay event descriptor */
+    /* set up the delay event descriptor */
     node->d_supStruct = supportPtr;
     node->d_wakeTime = now + ((cpu_t)delayDuration * MICROSECONDS);
     delayd_insertADL(node);
 
     toggleInterrupts(OFF);
-    /* Release mutual exclusion over the ADL & allow Delay Daemon to process it */
+    /* release mutual exclusion over the ADL & allow Delay Daemon to process it */
     mutex(OFF, &adl_sem);
-    /* Perform P on the U-proc's private semaphore to block it from running */
+    /* perform P on the U-proc's private semaphore to block it from running */
     mutex(ON, &(supportPtr->sup_privateSem));
     toggleInterrupts(ON);
 }
