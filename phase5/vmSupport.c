@@ -147,7 +147,7 @@ HIDDEN int flashRW(int operation, int devNo, int blockNo, int frameAddr) {
     devRegArea->devreg[devIndex].d_command = (blockNo << BITSHIFT_8) | operation;
 
     /* issue command to device */
-    int status = SYSCALL(WAITFORIO, FLASHINT, devNo, (operation == READBLK));
+    int status = SYSCALL(WAITFORIO, FLASHINT, devNo, (operation == FLASH_READBLK));
 
     toggleInterrupts(ON);
 
@@ -213,7 +213,7 @@ void supTlbExceptionHandler() {
         toggleInterrupts(ON);
         
         /* (c) write victim page to backing store */
-        int status = flashRW(WRITEBLK, devNo, victimPage, frameAddr);
+        int status = flashRW(FLASH_WRITEBLK, devNo, victimPage, frameAddr);
         if (status != READY) {
             /* terminate if flash write fails */
             supProgramTrapHandler();
@@ -223,7 +223,7 @@ void supTlbExceptionHandler() {
     /* 9. read requested page from backing store */
     int asid = supportPtr->sup_asid;
     int devNo = asid - 1;
-    int status = flashRW(READBLK, devNo, missingPage, frameAddr);
+    int status = flashRW(FLASH_READBLK, devNo, missingPage, frameAddr);
     
     if (status != READY) {
         supProgramTrapHandler();

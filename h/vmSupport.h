@@ -12,6 +12,7 @@
 #include "../h/types.h"
 #include "../h/initProc.h"
 #include "../h/sysSupport.h"
+#include "../h/deviceSupportDMA.h"
 #include "/usr/include/umps3/umps/libumps.h"
 
 extern void toggleInterrupts(int enable);

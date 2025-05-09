@@ -82,8 +82,11 @@
 /* device common COMMAND codes */
 #define RESET			    0
 #define ACK				    1
-#define	READBLK				2
-#define	WRITEBLK			3
+#define	FLASH_READBLK				2
+#define	FLASH_WRITEBLK			3
+#define DISK_READBLK				3
+#define DISK_WRITEBLK			4
+
 
 /* Memory related constants */
 #define KSEG0           0x00000000
@@ -124,22 +127,27 @@
 #define GETCPUTIME       6
 #define WAITFORCLOCK     7
 #define GETSUPPORT       8
-#define DELAY            18
+#define TERMINATE        9
+#define GETTOD          10
+#define WRITEPRINTER    11
+#define WRITETERMINAL   12
+#define READTERMINAL    13
+#define DISKPUT         14
+#define DISKGET         15
+#define FLASHPUT        16
+#define FLASHGET        17
+#define DELAY           18
 
 /*Line Constants*/
-#define PROCESSOR 0
-#define INTERVALTIMER 1
-#define PLTIMER 2
-#define DISK 3
-#define FLASH 4
-#define NETWORK 5
-#define PRINTER 6
-#define TERMINAL 7
-#define TERMINATE 9
-#define GETTOD 10
-#define WRITEPRINTER 11
-#define WRITETERMINAL 12
-#define READTERMINAL 13
+#define PROCESSOR       0
+#define INTERVALTIMER   1
+#define PLTIMER         2
+#define DISK            3
+#define FLASH           4
+#define NETWORK         5
+#define PRINTER         6
+#define TERMINAL        7
+
 
 /* Device Constants */
 #define DEVICE_COUNT        49
@@ -232,12 +240,14 @@
 #define BITMASK_8      0xFF
 #define INDEX_PMASK 0x80000000
 #define BITSHIFT_8     8
+#define BITSHIFT_16    16
+#define BITSHIFT_24    24
 #define PRINTCHR    2
 #define CHAR_TRANSMITTED 5
 #define CHAR_RECEIVED 5
 #define STATUS_MASK 0x000000FF
 
-#define POOLSIZE       2 * UPROCMAX  /* Size of swap pool */          
+#define POOLSIZE       (2 * UPROCMAX)  /* Size of swap pool */          
 #define FREEFRAME -1         /* unoccupied frame */
 #define MAXPAGES 32          /* max # pages per process */
 #define VPNSHIFT 12             /* shift value */
@@ -253,6 +263,11 @@
 #define DELAY_ASID 0
 #define MICROSECONDS 1000000
 
+#define SEEKCYL        2 
+
+
 #define POOLBASEADDR 0x20020000     /* base address of swap pool */
+#define DISKPOOLSTART    (POOLBASEADDR + (POOLSIZE * PAGESIZE))
+#define FLASHPOOLSTART   (DISKPOOLSTART + (DEVPERINT * PAGESIZE))
 
 #endif

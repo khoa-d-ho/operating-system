@@ -113,55 +113,6 @@ HIDDEN int pickVictim() {
 }
 
 /******************************************************************************
- * Function: flashRW
- * 
- * This function performs a read or write operation on the flash device. It
- * takes the operation type (read/write), device number, block number, and
- * frame address as parameters. It uses the device registers to perform the
- * operation and returns the status of the operation.
- * 
- * Parameters:
- *   operation - READBLK (2) or WRITEBLK (3)
- *   devNo - device number
- *   blockNo - block number
- *   frameAddr - frame address
- * 
- * Returns:
- *   The status of the operation (READY or error code).
- */
-HIDDEN int flashRW(int operation, int devNo, int blockNo, int frameAddr) {
-    int devIndex = ((FLASHINT - DISKINT) * DEVPERINT) + devNo;
-    
-    /* get device registers */
-    devregarea_t *devRegArea = (devregarea_t *) RAMBASEADDR;
-
-    /* get mutex for device */
-    mutex(ON, &devSemaphore[devIndex]); 
-
-    /* write starting physical address to be R/W to device register */
-    devRegArea->devreg[devIndex].d_data0 = frameAddr; 
-
-    toggleInterrupts(OFF);
-
-    /* set command field with device block number & command to read/write  */
-    devRegArea->devreg[devIndex].d_command = (blockNo << BITSHIFT_8) | operation;
-
-    /* issue command to device */
-    int status = SYSCALL(WAITFORIO, FLASHINT, devNo, 0);
-
-    toggleInterrupts(ON);
-
-    mutex(OFF, &devSemaphore[devIndex]);
-
-    if (status != READY) {
-        /* handle error, return negative status code */
-        status = -status;
-    }
-
-    return status;
-}
-
-/******************************************************************************
  * Function: supTlbExceptionHandler (the Pager)
  * 
  * This function handles TLB exceptions. It first checks if the exception is a
@@ -213,7 +164,7 @@ void supTlbExceptionHandler() {
         toggleInterrupts(ON);
         
         /* (c) write victim page to backing store */
-        int status = flashRW(FLASH_WRITEBLK, devNo, victimPage, frameAddr);
+        int status = flashOperation(FLASH_WRITEBLK, devNo, victimPage, frameAddr);
         if (status != READY) {
             /* terminate if flash write fails */
             supProgramTrapHandler();
@@ -223,7 +174,7 @@ void supTlbExceptionHandler() {
     /* 9. read requested page from backing store */
     int asid = supportPtr->sup_asid;
     int devNo = asid - 1;
-    int status = flashRW(FLASH_READBLK, devNo, missingPage, frameAddr);
+    int status = flashOperation(FLASH_READBLK, devNo, missingPage, frameAddr);
     
     if (status != READY) {
         supProgramTrapHandler();

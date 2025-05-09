@@ -42,6 +42,10 @@ HIDDEN void getTod(state_t *excState);
 HIDDEN void writeToPrinter(state_t *excState, int asid);
 HIDDEN void writeToTerminal(state_t *excState, int asid);
 HIDDEN void readFromTerminal(state_t *excState, int asid);
+HIDDEN void diskPut(state_t *excState);
+HIDDEN void diskGet(state_t *excState);
+HIDDEN void flashPut(state_t *excState);
+HIDDEN void flashGet(state_t *excState);
 
 /*****************************************************************************
  *  Function: supGeneralExceptionHandler
@@ -104,6 +108,22 @@ void supSyscallHandler(support_t *supportPtr) {
         }
         case READTERMINAL: {
             readFromTerminal(excState, asid);  /* SYS13 */
+            break;
+        }
+        case DISKPUT: {
+            diskPut(excState);  /* SYS14 */
+            break;
+        }
+        case DISKGET: {
+            diskGet(excState);  /* SYS15 */
+            break;
+        }
+        case FLASHPUT: {
+            flashPut(excState);  /* SYS16 */
+            break;
+        }
+        case FLASHGET: {
+            flashGet(excState);  /* SYS17 */
             break;
         }
         case DELAY: {
@@ -376,3 +396,153 @@ void readFromTerminal(state_t *excState, int asid) {
         excState->s_v0 = -statusCode;
     }
 }
+
+/******************************************************************************
+ * Function: diskPut (SYS14)
+ * 
+ * This function performs a write operation on the disk device. It takes a
+ * pointer to the support structure as a parameter. It retrieves the device
+ * number, block number, and frame address from the support structure and
+ * performs the write operation using the diskOperation function. It also
+ * handles errors and updates the support structure with the status of the
+ * operation.
+ * 
+ * Parameters:
+ *  supportPtr - pointer to the support structure
+ */
+void diskPut(state_t *excState) {
+    memaddr *logicalAddr = (memaddr *) excState->s_a1;
+    int diskNo = excState->s_a2;
+    int sectorNo = excState->s_a3;
+
+    if ((int)logicalAddr < KUSEG) {
+        supProgramTrapHandler();
+    }
+
+    memaddr *dmaBuf = (memaddr *)(DISKPOOLSTART + (diskNo * PAGESIZE));
+
+    int i;
+    for (i = 0; i < (PAGESIZE / WORDLEN); i++) {
+        dmaBuf[i] = logicalAddr[i]; 
+    }
+
+    dmaBuf = (memaddr *)(DISKPOOLSTART + (diskNo * PAGESIZE));
+
+    int status = diskOperation(DISK_WRITEBLK, diskNo, sectorNo, (int) dmaBuf);
+
+    excState->s_v0 = status;
+}
+
+/******************************************************************************
+ * Function: diskGet (SYS15)
+ * 
+ * This function performs a read operation on the disk device. It takes a
+ * pointer to the support structure as a parameter. It retrieves the device
+ * number, block number, and frame address from the support structure and
+ * performs the read operation using the diskOperation function. It also
+ * handles errors and updates the support structure with the status of the
+ * operation.
+ *
+ * Parameters:
+ *   supportPtr - pointer to the support structure
+ */
+void diskGet(state_t *excState) {
+    memaddr *logicalAddr = (memaddr *) excState->s_a1;
+    int diskNo = excState->s_a2;
+    int sectorNo = excState->s_a3;
+
+    if ((int)logicalAddr < KUSEG) {
+        supProgramTrapHandler();
+    }
+
+    memaddr *dmaBuf = (memaddr *)(DISKPOOLSTART + (diskNo * PAGESIZE));
+
+    int status = diskOperation(DISK_READBLK, diskNo, sectorNo, (int)dmaBuf);
+
+    int i;
+    if (status == READY) {
+        for (i = 0; i < (PAGESIZE / WORDLEN); i++) {
+            logicalAddr[i] = dmaBuf[i];
+        }
+    }
+
+    excState->s_v0 = status;
+}
+
+/******************************************************************************
+ * Function: flashPut (SYS16)
+ * 
+ * This function performs a write operation on the flash device. It takes a
+ * pointer to the support structure as a parameter. It retrieves the device
+ * number, block number, and frame address from the support structure and
+ * performs the write operation using the flashOperation function. It also
+ * handles errors and updates the support structure with the status of the
+ * operation.
+ *
+ * Parameters:
+ *   supportPtr - pointer to the support structure
+ */
+void flashPut(state_t *excState) {
+    /* get device number and block number from exception state */
+    memaddr *logicalAddr = (memaddr *) excState->s_a1;
+    int flashNo = excState->s_a2;
+    int blockNo = excState->s_a3;
+
+    if ((int) logicalAddr < KUSEG) {
+        supProgramTrapHandler();
+    }
+
+    /* calculate address of the DMA buffer */
+    memaddr *dmaBuf = (memaddr *)(FLASHPOOLSTART + (flashNo * PAGESIZE));
+
+    /* copy data from logical address to DMA buffer */
+    int i;
+    for (i = 0; i < PAGESIZE / WORDLEN; i++) {
+        dmaBuf[i] = logicalAddr[i];
+    }
+
+    /* call existing flashOperation with DMA buffer physical address */
+    int status = flashOperation(FLASH_WRITEBLK, flashNo, blockNo, (int)dmaBuf);
+
+    /* store result in v0 */
+    excState->s_v0 = status;
+}
+
+/******************************************************************************
+ * Function: flashGet (SYS17)
+ * 
+ * This function performs a read operation on the flash device. It takes a
+ * pointer to the support structure as a parameter. It retrieves the device
+ * number, block number, and frame address from the support structure and
+ * performs the read operation using the flashOperation function. It also
+ * handles errors and updates the support structure with the status of the
+ * operation.
+ *
+ * Parameters:
+ *   supportPtr - pointer to the support structure
+ */
+void flashGet(state_t *excState) {
+    /* get device number and block number from support structure */
+    memaddr *logicalAddr = (memaddr *) excState->s_a1;
+    int flashNo = excState->s_a2;
+    int blockNo = excState->s_a3;
+
+    if ((int) logicalAddr < KUSEG) {
+        supProgramTrapHandler();
+    }
+
+    memaddr *dmaBuf = (memaddr *)(FLASHPOOLSTART + (flashNo * PAGESIZE));
+
+    /* call existing flashOperation with DMA buffer physical address */
+    int status = flashOperation(FLASH_READBLK, flashNo, blockNo, (int)dmaBuf);
+
+    /* copy data from DMA buffer to logical address */
+    int i;
+    for (i = 0; i < PAGESIZE / WORDLEN; i++) {
+        logicalAddr[i] = dmaBuf[i];
+    }
+
+    /* store result in v0 */
+    excState->s_v0 = status;
+}
+
