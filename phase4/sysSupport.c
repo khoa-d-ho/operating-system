@@ -403,31 +403,32 @@ void readFromTerminal(state_t *excState, int asid) {
  * This function performs a write operation on the disk device. It takes a
  * pointer to the support structure as a parameter. It retrieves the device
  * number, block number, and frame address from the support structure and
- * performs the write operation using the diskOperation function. It also
- * handles errors and updates the support structure with the status of the
- * operation.
+ * performs the write operation using the diskOperation function. It then
+ * updates the support structure with the status of the operation.
  * 
  * Parameters:
- *  supportPtr - pointer to the support structure
+ *   excState - pointer to the exception state structure
  */
 void diskPut(state_t *excState) {
     memaddr *logicalAddr = (memaddr *) excState->s_a1;
     int diskNo = excState->s_a2;
     int sectorNo = excState->s_a3;
 
+    /* check if address is in user space */
     if ((int)logicalAddr < KUSEG) {
         supProgramTrapHandler();
     }
 
+    /* calculate address of the DMA buffer */
     memaddr *dmaBuf = (memaddr *)(DISKPOOLSTART + (diskNo * PAGESIZE));
 
+    /* copy data from logical address to DMA buffer */
     int i;
     for (i = 0; i < (PAGESIZE / WORDLEN); i++) {
         dmaBuf[i] = logicalAddr[i]; 
     }
 
-    dmaBuf = (memaddr *)(DISKPOOLSTART + (diskNo * PAGESIZE));
-
+    /* call diskOperation with DMA buffer physical address */
     int status = diskOperation(DISK_WRITEBLK, diskNo, sectorNo, (int) dmaBuf);
 
     excState->s_v0 = status;
@@ -439,28 +440,32 @@ void diskPut(state_t *excState) {
  * This function performs a read operation on the disk device. It takes a
  * pointer to the support structure as a parameter. It retrieves the device
  * number, block number, and frame address from the support structure and
- * performs the read operation using the diskOperation function. It also
- * handles errors and updates the support structure with the status of the
- * operation.
+ * performs the read operation using the diskOperation function. It then
+ * updates the support structure with the status of the operation.
  *
  * Parameters:
- *   supportPtr - pointer to the support structure
+ *   excState - pointer to the exception state structure
  */
 void diskGet(state_t *excState) {
     memaddr *logicalAddr = (memaddr *) excState->s_a1;
     int diskNo = excState->s_a2;
     int sectorNo = excState->s_a3;
 
+    /* check if address is in user space */
     if ((int)logicalAddr < KUSEG) {
         supProgramTrapHandler();
     }
 
+    /* calculate address of the DMA buffer */
     memaddr *dmaBuf = (memaddr *)(DISKPOOLSTART + (diskNo * PAGESIZE));
 
+    /* call diskOperation with DMA buffer physical address */
     int status = diskOperation(DISK_READBLK, diskNo, sectorNo, (int)dmaBuf);
 
+    /* copy data from DMA buffer to logical address */
     int i;
     if (status == READY) {
+        /* if read was successful */
         for (i = 0; i < (PAGESIZE / WORDLEN); i++) {
             logicalAddr[i] = dmaBuf[i];
         }
@@ -475,19 +480,18 @@ void diskGet(state_t *excState) {
  * This function performs a write operation on the flash device. It takes a
  * pointer to the support structure as a parameter. It retrieves the device
  * number, block number, and frame address from the support structure and
- * performs the write operation using the flashOperation function. It also
- * handles errors and updates the support structure with the status of the
- * operation.
+ * performs the write operation using the flashOperation function. It then
+ * updates the support structure with the status of the operation.
  *
  * Parameters:
- *   supportPtr - pointer to the support structure
+ *   excState - pointer to the exception state structure
  */
 void flashPut(state_t *excState) {
-    /* get device number and block number from exception state */
     memaddr *logicalAddr = (memaddr *) excState->s_a1;
     int flashNo = excState->s_a2;
     int blockNo = excState->s_a3;
 
+    /* check if address is in user space */
     if ((int) logicalAddr < KUSEG) {
         supProgramTrapHandler();
     }
@@ -501,7 +505,7 @@ void flashPut(state_t *excState) {
         dmaBuf[i] = logicalAddr[i];
     }
 
-    /* call existing flashOperation with DMA buffer physical address */
+    /* call flashOperation with DMA buffer physical address */
     int status = flashOperation(FLASH_WRITEBLK, flashNo, blockNo, (int)dmaBuf);
 
     /* store result in v0 */
@@ -514,26 +518,25 @@ void flashPut(state_t *excState) {
  * This function performs a read operation on the flash device. It takes a
  * pointer to the support structure as a parameter. It retrieves the device
  * number, block number, and frame address from the support structure and
- * performs the read operation using the flashOperation function. It also
- * handles errors and updates the support structure with the status of the
- * operation.
+ * performs the read operation using the flashOperation function. It then 
+ * updates the support structure with the status of the operation.
  *
  * Parameters:
- *   supportPtr - pointer to the support structure
+ *   excState - pointer to the exception state structure
  */
 void flashGet(state_t *excState) {
-    /* get device number and block number from support structure */
     memaddr *logicalAddr = (memaddr *) excState->s_a1;
     int flashNo = excState->s_a2;
     int blockNo = excState->s_a3;
 
+    /* check if address is in user space */
     if ((int) logicalAddr < KUSEG) {
         supProgramTrapHandler();
     }
 
     memaddr *dmaBuf = (memaddr *)(FLASHPOOLSTART + (flashNo * PAGESIZE));
 
-    /* call existing flashOperation with DMA buffer physical address */
+    /* call flashOperation with DMA buffer physical address */
     int status = flashOperation(FLASH_READBLK, flashNo, blockNo, (int)dmaBuf);
 
     /* copy data from DMA buffer to logical address */

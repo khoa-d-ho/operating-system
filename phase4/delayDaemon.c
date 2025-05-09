@@ -233,9 +233,9 @@ void delayFacility(support_t *supportPtr) {
     delayd_insertADL(node);
 
     toggleInterrupts(OFF);
-    /* release mutual exclusion over the ADL & allow Delay Daemon to process it */
+    /* release mutex over ADL & allow Delay Daemon to process it */
     mutex(OFF, &adl_sem);
-    /* perform P on the U-proc's private semaphore to block it from running */
+    /* perform P on the U-proc's private semaphore & block it from running */
     mutex(ON, &(supportPtr->sup_privateSem));
     toggleInterrupts(ON);
 }
