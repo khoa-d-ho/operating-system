@@ -27,7 +27,7 @@ HIDDEN int adl_sem = 1;                     /* semaphore for ADL mutual exclusio
  * of the free list to the node.
  * 
  * Parameters:
- *   node - The delayd_t node to be added to the free list.
+ * node - The delayd_t node to be added to the free list.
  */
 HIDDEN void delayd_freeNode(delayd_t *node) { 
     node->d_next = delaydFree_h;
@@ -42,7 +42,7 @@ HIDDEN void delayd_freeNode(delayd_t *node) {
  * allocated node.
  * 
  * Returns:
- *   A pointer to the allocated delayd_t node, or NULL if no nodes are available.
+ * A pointer to the allocated delayd_t node, or NULL if no nodes are available.
  */
 HIDDEN delayd_t *delayd_allocNode() {
     if (delaydFree_h == NULL) {
@@ -69,7 +69,7 @@ HIDDEN delayd_t *delayd_allocNode() {
  * new node and updates the next pointers accordingly.
  * 
  * Parameters:
- *   node - The delayd_t node to be inserted into the ADL.
+ * node - The delayd_t node to be inserted into the ADL.
  */
 HIDDEN void delayd_insertADL(delayd_t *node) {
     delayd_t *prev = delayd_h; /* dummy head */
