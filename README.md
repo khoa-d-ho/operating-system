@@ -85,7 +85,7 @@ Testers are compiled into `.umps` images and run alongside the kernel in the µM
 
 ### Prerequisites
 
-- µMPS3 emulator installed
+- A Linux environment with µMPS3 emulator [installed](https://wiki.virtualsquare.org/education/tutorials/umps/installation.html) 
 - MIPS cross-compiler toolchain (e.g., `mipsel-linux-gnu-gcc`, `mipsel-linux-gnu-ld`)
 
 ### Build Kernel
