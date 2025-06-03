@@ -60,7 +60,7 @@ Completed block device operations after delay logic:
 
 ### Phase 5: The Delay Facility 
 
-Implemented the delay facility before DMA:
+Implemented timed suspension via the Active Delay List (ADL) and a delay daemon.
 - `delayDaemon.c`: Handles process delays and wakeups
 - `sysSupport.c`: SYSCALL 18 (DELAY) and ADL integration
 
