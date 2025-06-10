@@ -54,13 +54,14 @@ Added paging and user program management:
 - `initProc.c`: Initializes user processes and support structs
 
 ### Phase 4: DMA Device I/O
+
 Completed block device operations after delay logic:
 - `deviceSupportDMA.c`: Handles disk and flash I/O via DMA
 - `sysSupport.c`: SYSCALLs 14–17 (DISKPUT, FLASHPUT, etc.)
 
 ### Phase 5: The Delay Facility 
 
-Implemented timed suspension via the Active Delay List (ADL) and a delay daemon.
+Implemented timed suspension via the Active Delay List (ADL) and a delay daemon:
 - `delayDaemon.c`: Handles process delays and wakeups
 - `sysSupport.c`: SYSCALL 18 (DELAY) and ADL integration
 
