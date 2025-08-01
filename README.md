@@ -1,6 +1,6 @@
 # The PandOS Operating System 
 
-This repository contains a 5-phase implementation of a lightweight operating system built on the µMPS3 emulator. The project explores foundational OS concepts such as process management, exception handling, virtual memory, and device I/O using semaphores and DMA.
+This repository contains a 5-phase implementation of a lightweight operating system built on the [µMPS3](https://wiki.virtualsquare.org/#/education/umps) emulator. The project explores foundational OS concepts such as process management, exception handling, virtual memory, and device I/O using semaphores and DMA.
 
 
 
