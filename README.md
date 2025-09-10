@@ -125,7 +125,6 @@ Use µMPS3’s interface to examine output via TERMINAL0 or associated memory bu
 - **Hieu Tran** – tran_h10@denison.edu
 - **Khoa Ho** – ho_d1@dension.edu
 
-This project was developed for Denison University's **CS 372 – Operating Systems** course, instructed by Dr. Mikey Goldweber. 
-
+Special thanks to Dr. Mikey Goldweber!
 
 If this repository helped you in any way, feel free to shoot us an email 😉
